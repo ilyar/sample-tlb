@@ -1,0 +1,48 @@
+{
+  "name": "sample-tlb",
+  "version": "1.0.0-alpa.1",
+  "description": "TL-B Runtime sample",
+  "author": "TonTech",
+  "license": "MIT",
+  "type": "module",
+  "prettier": "@ton/toolchain/prettier",
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --max-warnings 0 --fix",
+    "test": "jest --config jest.config.ts",
+    "test:watch": "jest --config jest.config.ts --watch",
+    "test:coverage": "jest --config jest.config.ts --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:install": "playwright install",
+    "qa": "yarn lint && yarn test && yarn test:e2e",
+    "dev": "vite",
+    "build": "tsc && vite build --mode production",
+    "release": "gh-pages --nojekyll --branch release --dist dist",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2",
+    "@testing-library/jest-dom": "^6.7.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.3.0",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.8.3",
+    "vite": "^7.1.2",
+    "vite-plugin-node-polyfills": "^0.24.0"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "dependencies": {
+    "@ton/core": "^0.61.0",
+    "@ton/toolchain": "the-ton-tech/toolchain#v1",
+    "buffer": "^6.0.3",
+    "gh-pages": "^6.3.0",
+    "process": "^0.11.10",
+    "tlb-rest-server": "/home/ilyar/project/ton-tech/tlb-rest-server"
+  }
+}
