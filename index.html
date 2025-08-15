@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>TL-B Runtime</title>
+    <link rel="icon" type="image/svg+xml" href="./logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <div id="app">
+      <h1><a target="_blank" href="https://github.com/ton-community/tlb-rest-server/tree/main/src/tlb-runtime">TL-B Runtime</a></h1>
+      <div class="app-container">
+        <div class="form-container">
+          <div class="fields-container">
+            <div class="field-group schema-field">
+              <div class="label-row">
+                <label for="schema">TL-B Schema</label>
+                <span id="schema-error" class="field-error" style="display: none;"></span>
+              </div>
+              <textarea name="schema" id="schema" placeholder="TLB schema..."></textarea>
+            </div>
+
+            <div class="field-group boc-field">
+              <div class="label-row">
+                <label for="boc">BoC</label>
+                <span id="boc-error" class="field-error" style="display: none;"></span>
+              </div>
+              <textarea name="boc" id="boc" placeholder="BoC in base64 or hex"></textarea>
+            </div>
+
+            <div class="field-group data-field">
+              <div class="label-row">
+                <label for="data">Data</label>
+                <span id="data-error" class="field-error" style="display: none;"></span>
+              </div>
+              <textarea name="data" id="data" placeholder="Data in JSON"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      <a href="https://ton.tech/" target="_blank">
+        <img src="./logo.svg" class="logo" alt="TON Tech" />
+      </a>
+    </div>
+    <script type="module" src="./src/app.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+*.log
+*.log*
+node_modules
+*-report
+*-results
+dist*
+*.local
+coverage
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
