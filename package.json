@@ -43,6 +43,6 @@
     "buffer": "^6.0.3",
     "gh-pages": "^6.3.0",
     "process": "^0.11.10",
-    "tlb-rest-server": "/home/ilyar/project/ton-tech/tlb-rest-server"
+    "tlb-rest-server": "https://github.com/ton-community/tlb-rest-server.git"
   }
 }

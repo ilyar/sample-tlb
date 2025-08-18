@@ -6008,8 +6008,9 @@ tinyglobby@^0.2.14:
     fdir "^6.4.4"
     picomatch "^4.0.2"
 
-"tlb-rest-server@file:../tlb-rest-server":
+"tlb-rest-server@https://github.com/ton-community/tlb-rest-server.git":
   version "1.0.0-alpha.0"
+  resolved "https://github.com/ton-community/tlb-rest-server.git#64600c0196d21bb4a14e3c3d2351b2a1fc41ea04"
   dependencies:
     "@ton-community/tlb-codegen" "^2.0.0-beta.1"
     "@ton-community/tlb-parser" "^0.1.4"
