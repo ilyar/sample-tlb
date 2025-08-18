@@ -4,7 +4,7 @@
 npm install https://github.com/ton-community/tlb-rest-server.git
 ```
 
-## Simple
+## Sample
 
 ```typescript
 import { parseTLB } from 'tlb-rest-server/src/tlb-runtime';
