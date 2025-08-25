@@ -1,4 +1,4 @@
-import { TLBRuntime, Result, unwrap, replacer, blockSchema } from 'tlb-rest-server/src/tlb-runtime';
+import { TLBRuntime, Result, unwrap, replacer, blockSchema } from '@ton-community/tlb-runtime';
 
 export const defaultSchema = 'message#_ len:(## 7) { len <= 127 } text:(bits (len * 8)) = Message;';
 

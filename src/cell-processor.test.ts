@@ -1,4 +1,4 @@
-import { ParsedCell, Failure, Success } from 'tlb-rest-server/src/tlb-runtime';
+import { ParsedCell, Failure, Success } from '@ton-community/tlb-runtime';
 
 import { defaultBoc, defaultSchema, CellProcessor, TLBData, Focus } from './cell-processor.ts';
 
@@ -171,19 +171,19 @@ describe('CellProcessor', () => {
                     response_destination: 'Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU',
                     custom_payload: { kind: 'Maybe_nothing' },
                 },
-                boc: 'te6cckEBAQEAMwAAYVlfB7wAAAAAAAAAAAACAz/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBx2oNK',
+                boc: 'te6cckEBAQEAMQAAXllfB7wAAAAAAAAAABAZ/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8gPSJw==',
             },
             encode: {
                 data: {
                     kind: 'InternalMsgBody',
-                    query_id: '0',
                     amount: '42',
-                    response_destination: 'Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU',
                     custom_payload: {
                         kind: 'Maybe_nothing',
                     },
+                    query_id: '0',
+                    response_destination: 'Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU',
                 },
-                boc: 'te6cckEBAQEAMwAAYVlfB7wAAAAAAAAAAAACVT/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAhHmPH',
+                boc: 'b5ee9c7241010101003100005e595f07bc000000000000000012a9fe0000000000000000000000000000000000000000000000000000000000000000e3f10fd5',
             },
         },
     ])('expect case %s', (sample: TestSample) => {
