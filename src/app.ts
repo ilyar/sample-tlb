@@ -1,4 +1,4 @@
-import { Result } from 'tlb-rest-server/src/tlb-runtime';
+import { Result } from '@ton-community/tlb-runtime';
 
 import { CellProcessor, TLBData } from './cell-processor';
 

@@ -6,8 +6,8 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
+    "@ton-community/tlb-runtime": "^1.0.0-alpha.1",
     "@ton/core": "^0.61.0",
-    "tlb-rest-server": "https://github.com/ton-community/tlb-rest-server.git",
     "vite-plugin-node-polyfills": "^0.24.0"
   },
   "prettier": "@ton/toolchain/prettier",
