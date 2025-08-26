@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "@ton-community/tlb-runtime": "^1.0.0-alpha.1",
+    "@ton-community/tlb-runtime": "^1.0.0-alpha.2",
     "@ton/core": "^0.61.0",
     "vite-plugin-node-polyfills": "^0.24.0"
   },
