@@ -5,11 +5,6 @@
   "author": "TonTech",
   "license": "MIT",
   "type": "module",
-  "dependencies": {
-    "@ton-community/tlb-runtime": "^1.0.0-alpha.2",
-    "@ton/core": "^0.61.0",
-    "vite-plugin-node-polyfills": "^0.24.0"
-  },
   "prettier": "@ton/toolchain/prettier",
   "scripts": {
     "lint": "eslint . --max-warnings 0",
@@ -30,15 +25,19 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
+    "@ton-community/tlb-runtime": "https://gist.github.com/ilyar/baac357ceafa1112161418d7df5247b9/raw/60d191ad7fd03b6eb8fda6c028145b6cdef64cb6/ton-community-tlb-runtime-1.0.0-alpha.4.tgz",
     "@ton/toolchain": "the-ton-tech/toolchain#v1",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.3.0",
     "gh-pages": "^6.3.0",
     "jest": "^30.0.5",
+    "rollup-plugin-visualizer": "^6.0.5",
+    "terser": "^5.46.0",
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.3",
-    "vite": "^7.1.2"
+    "vite": "^7.1.2",
+    "vite-plugin-node-polyfills": "^0.24.0"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

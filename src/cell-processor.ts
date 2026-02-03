@@ -97,8 +97,8 @@ export class CellProcessor {
 
         this.boc = newBoc;
         try {
-            const parsed = this.runtime.parseCell(this.boc);
-            this.data = JSON.stringify(parsed, replacer, 2);
+            const decoded = this.runtime.decodeCell(this.boc);
+            this.data = JSON.stringify(decoded, replacer, 2);
         } catch (error) {
             return {
                 success: false,
