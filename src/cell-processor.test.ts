@@ -1,11 +1,11 @@
-import { ParsedCell, Failure, Success } from '@ton-community/tlb-runtime';
+import { TypedCell, Failure, Success } from '@ton-community/tlb-runtime';
 
 import { defaultBoc, defaultSchema, CellProcessor, TLBData, Focus } from './cell-processor.ts';
 
 interface TestSample {
     schema: string;
-    decode: { data: ParsedCell; boc: string };
-    encode: { data: ParsedCell; boc: string };
+    decode: { data: TypedCell; boc: string };
+    encode: { data: TypedCell; boc: string };
 }
 
 describe('CellProcessor', () => {
@@ -162,7 +162,22 @@ describe('CellProcessor', () => {
         },
         {
             // TEP-74 Fungible tokens (Jettons)
-            schema: 'block.tlb burn#595f07bc query_id:uint64 amount:(VarUInteger 16) response_destination:MsgAddress custom_payload:(Maybe ^Cell) = InternalMsgBody;',
+            schema: `nothing$0 {X:Type} = Maybe X;
+just$1 {X:Type} value:X = Maybe X;
+var_uint$_ {n:#} len:(#< n) value:(uint (len * 8)) = VarUInteger n;
+addr_none$00 = MsgAddressExt;
+addr_extern$01 len:(## 9) external_address:(bits len) = MsgAddressExt;
+anycast_info$_ depth:(#<= 30) { depth >= 1 } rewrite_pfx:(bits depth) = Anycast;
+addr_std$10 anycast:(Maybe Anycast) workchain_id:int8 address:bits256  = MsgAddressInt;
+addr_var$11 anycast:(Maybe Anycast) addr_len:(## 9) workchain_id:int32 address:(bits addr_len) = MsgAddressInt;
+_ _:MsgAddressInt = MsgAddress;
+_ _:MsgAddressExt = MsgAddress;
+burn#595f07bc
+ query_id:uint64
+ amount:(VarUInteger 16)
+ response_destination:MsgAddress
+ custom_payload:(Maybe ^Cell)
+ = InternalMsgBody;`,
             decode: {
                 data: {
                     kind: 'InternalMsgBody',
@@ -176,12 +191,12 @@ describe('CellProcessor', () => {
             encode: {
                 data: {
                     kind: 'InternalMsgBody',
+                    query_id: '0',
                     amount: '42',
+                    response_destination: 'Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU',
                     custom_payload: {
                         kind: 'Maybe_nothing',
                     },
-                    query_id: '0',
-                    response_destination: 'Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU',
                 },
                 boc: 'b5ee9c7241010101003100005e595f07bc000000000000000012a9fe0000000000000000000000000000000000000000000000000000000000000000e3f10fd5',
             },

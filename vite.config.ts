@@ -1,4 +1,5 @@
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 const isDevelop = !process.argv.includes('production');
 
@@ -7,6 +8,11 @@ export default {
     plugins: [
         nodePolyfills({
             include: ['buffer'],
+        }),
+        visualizer({
+            filename: 'stats.html',
+            gzipSize: true,
+            brotliSize: true,
         }),
     ],
     define: {
@@ -21,15 +27,20 @@ export default {
         include: ['buffer'],
     },
     build: {
-        rollupOptions: {
-            external: [],
-            output: {
-                manualChunks: {
-                    vendor: ['buffer'],
-                    ton: ['@ton/core'],
-                },
+        target: 'esnext',
+        minify: 'terser',
+        terserOptions: {
+            compress: {
+                drop_console: true,
+                drop_debugger: true,
             },
         },
-        chunkSizeWarningLimit: 600,
+        rollupOptions: {
+            output: {
+                manualChunks: undefined,
+                compact: true,
+            },
+        },
+        chunkSizeWarningLimit: 1000,
     },
 };
