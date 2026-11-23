@@ -30,6 +30,9 @@ export default {
         target: 'esnext',
         minify: 'terser',
         terserOptions: {
+            // TL-B schema parsing dispatches on AST constructor names.
+            keep_classnames: true,
+            keep_fnames: true,
             compress: {
                 drop_console: true,
                 drop_debugger: true,
