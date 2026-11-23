@@ -1038,16 +1038,9 @@
   dependencies:
     ohm-js "^v17.2.1"
 
-"@ton-community/tlb-runtime@file:../tlb-runtime":
+"@ton-community/tlb-runtime@file:vendor/tlb-runtime-8ec00a5.tgz":
   version "1.0.0-alpha.4"
-  dependencies:
-    "@ton-community/tlb-parser" "https://gist.github.com/ilyar/baac357ceafa1112161418d7df5247b9/raw/3d7cf9e6cfe85e7d0321319f372dc2d12d11d4ce/ton-community-tlb-parser-0.2.0.tgz"
-    "@ton/core" "^0.63.0"
-    "@ton/crypto" "^3.3.0"
-
-"@ton-community/tlb-runtime@https://gist.github.com/ilyar/baac357ceafa1112161418d7df5247b9/raw/60d191ad7fd03b6eb8fda6c028145b6cdef64cb6/ton-community-tlb-runtime-1.0.0-alpha.4.tgz":
-  version "1.0.0-alpha.4"
-  resolved "https://gist.github.com/ilyar/baac357ceafa1112161418d7df5247b9/raw/60d191ad7fd03b6eb8fda6c028145b6cdef64cb6/ton-community-tlb-runtime-1.0.0-alpha.4.tgz#77e08e9918f6cc3928acbd2e310f7fd009571aeb"
+  resolved "file:vendor/tlb-runtime-8ec00a5.tgz#c15bb793b9e050288718d641332d92a9d302cfd8"
   dependencies:
     "@ton-community/tlb-parser" "https://gist.github.com/ilyar/baac357ceafa1112161418d7df5247b9/raw/3d7cf9e6cfe85e7d0321319f372dc2d12d11d4ce/ton-community-tlb-parser-0.2.0.tgz"
     "@ton/core" "^0.63.0"

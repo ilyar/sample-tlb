@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
-    "@ton-community/tlb-runtime": "https://gist.github.com/ilyar/baac357ceafa1112161418d7df5247b9/raw/60d191ad7fd03b6eb8fda6c028145b6cdef64cb6/ton-community-tlb-runtime-1.0.0-alpha.4.tgz",
+    "@ton-community/tlb-runtime": "file:vendor/tlb-runtime-8ec00a5.tgz",
     "@ton/toolchain": "the-ton-tech/toolchain#v1",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.3.0",
