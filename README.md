@@ -1,6 +1,6 @@
 # TL-B Runtime Sample
 
-The demo uses the bundled runtime built from [commit 9f85141](https://github.com/ilyar/tlb-runtime/commit/9f85141a195af8a05fd379df48e0473f876854f6).
+The demo uses the bundled runtime built from [commit 1b4f59f](https://github.com/ilyar/tlb-runtime/commit/1b4f59f1b2df25a5b45a7b177dba922afbcac522).
 
 ## Run
 
