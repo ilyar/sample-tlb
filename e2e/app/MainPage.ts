@@ -48,7 +48,7 @@ export class MainPage extends BasePage {
     }
 
     async getSchemaValue(): Promise<string> {
-        return await this.schemaField.inputValue();
+        return (await this.schemaField.locator('.cm-placeholder').count()) ? '' : this.schemaField.innerText();
     }
 
     async getBocValue(): Promise<string> {
@@ -56,7 +56,7 @@ export class MainPage extends BasePage {
     }
 
     async getDataValue(): Promise<string> {
-        return await this.dataField.inputValue();
+        return (await this.dataField.locator('.cm-placeholder').count()) ? '' : this.dataField.innerText();
     }
 
     // Методы для валидации
@@ -76,7 +76,7 @@ export class MainPage extends BasePage {
 
     // Методы для синхронизации
     async ensureSchemaIsSet() {
-        const schemaValue = await this.schemaField.inputValue();
+        const schemaValue = await this.schemaField.innerText();
         if (!schemaValue.includes('message#_')) {
             await this.schemaField.fill('message#_ len:(## 7) { len <= 127 } text:(bits (len * 8)) = Message;');
         }

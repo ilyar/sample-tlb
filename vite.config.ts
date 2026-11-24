@@ -1,3 +1,4 @@
+import { lezer } from '@lezer/generator/rollup';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { visualizer } from 'rollup-plugin-visualizer';
 
@@ -6,6 +7,7 @@ const isDevelop = !process.argv.includes('production');
 export default {
     base: isDevelop ? '/' : '/sample-tlb/',
     plugins: [
+        lezer(),
         nodePolyfills({
             include: ['buffer'],
         }),
@@ -40,7 +42,9 @@ export default {
         },
         rollupOptions: {
             output: {
-                manualChunks: undefined,
+                manualChunks(id: string) {
+                    if (/node_modules\/(?:@codemirror|@lezer)\//.test(id)) return 'editor';
+                },
                 compact: true,
             },
         },

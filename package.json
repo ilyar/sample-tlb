@@ -24,6 +24,14 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "@lezer/generator": "^1.8.1",
+    "@lezer/highlight": "^1.2.5",
+    "@lezer/lr": "^1.4.12",
     "@playwright/test": "^1.54.2",
     "@ton-community/tlb-runtime": "file:vendor/tlb-runtime-ef997f3.tgz",
     "@ton/core": "^0.63.0",

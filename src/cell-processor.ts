@@ -7,6 +7,11 @@ export const defaultSchema = 'message#_ len:(## 7) { len <= 127 } text:(bits (le
 
 export const defaultBoc = 'te6cckEBAQEAFwAAKSioyuboQNrK5ubCzspA0txAxsrY2Whv0fw=';
 
+export function readBocRoots(raw: string): Cell[] {
+    const hex = /^(b5ee9c72|68ff65f3|acc3a728)/i.test(raw);
+    return Cell.fromBoc(Buffer.from(raw, hex ? 'hex' : 'base64'));
+}
+
 export enum DataFormat {
     hex,
     base64,
@@ -152,7 +157,9 @@ export class CellProcessor {
 
         this.boc = newBoc;
         try {
-            this.cell = /^b5ee9c72/i.test(this.boc) ? Cell.fromHex(this.boc) : Cell.fromBase64(this.boc);
+            const roots = readBocRoots(this.boc);
+            if (roots.length !== 1) throw new Error('Decoding requires a single root cell');
+            this.cell = roots[0];
             this.choices = decodeChoices(this.runtime, this.cell);
             if (!this.choices.length) throw new Error('No type in the schema matches the complete cell');
             if (this.choices.length === 1 && this.choices[0].value) return this.selectChoice(0);

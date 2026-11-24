@@ -17,6 +17,8 @@ module.exports = [
                 URLSearchParams: 'readonly',
                 document: 'readonly',
                 HTMLTextAreaElement: 'readonly',
+                HTMLDetailsElement: 'readonly',
+                HTMLOListElement: 'readonly',
                 HTMLSpanElement: 'readonly',
                 HTMLInputElement: 'readonly',
                 HTMLSelectElement: 'readonly',

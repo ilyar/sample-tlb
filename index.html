@@ -10,20 +10,20 @@
   </head>
   <body>
     <div id="app">
-      <h1><a target="_blank" href="https://github.com/ilyar/tlb-runtime/commit/ef997f382660f1078409d58a520dd1a742c7dc9f">@ton-community/tlb-runtime</a></h1>
+      <h1><img src="./logo.svg?v=3" alt="" width="28" height="28"><a target="_blank" href="https://github.com/ilyar/tlb-runtime/commit/ef997f382660f1078409d58a520dd1a742c7dc9f">TL-B Runtime</a></h1>
       <div class="app-container">
         <div class="form-container">
           <div class="fields-container">
             <div class="field-group schema-field">
               <div class="label-row">
-                <label for="schema">TL-B Schema</label>
+                <span id="schema-label">TL-B Schema</span>
                 <select id="docs-sample" aria-label="Documentation example">
                   <option value="" disabled selected>Sample from docs</option>
                 </select>
               </div>
               <a id="sample-source" target="_blank" rel="noopener noreferrer" hidden></a>
               <span id="schema-error" class="field-error" aria-live="polite"></span>
-              <textarea aria-describedby="schema-error" name="schema" id="schema" placeholder="TLB schema..."></textarea>
+              <div class="editor-host" id="schema-editor"></div>
             </div>
 
             <div class="field-group boc-field">
@@ -35,6 +35,10 @@
               <input id="share-link" aria-label="Link to copy" readonly hidden>
               <span id="boc-error" class="field-error" aria-live="polite"></span>
               <textarea aria-describedby="boc-error" name="boc" id="boc" placeholder="BoC in base64 or hex"></textarea>
+              <details id="cell-inspector" hidden>
+                <summary><span>Inspect cells</span><small id="cell-stats"></small></summary>
+                <ol id="cell-list"></ol>
+              </details>
               <div id="root-control" hidden>
                 <label for="root-type">Decode as</label>
                 <select id="root-type"></select>
@@ -44,10 +48,10 @@
 
             <div class="field-group data-field">
               <div class="label-row">
-                <label for="data">Data</label>
+                <span id="data-label">Data</span>
               </div>
               <span id="data-error" class="field-error" aria-live="polite"></span>
-              <textarea aria-describedby="data-error" name="data" id="data" placeholder="Data in JSON"></textarea>
+              <div class="editor-host" id="data-editor"></div>
             </div>
           </div>
         </div>

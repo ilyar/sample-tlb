@@ -14,18 +14,18 @@ test.describe('UI Functionality E2E Tests', () => {
         const picker = page.getByRole('combobox', { name: 'Documentation example' });
         const source = page.locator('#sample-source');
         await expect(picker).toHaveValue('');
-        await expect(mainPage.schemaField).toHaveValue(
+        await expect(mainPage.schemaField).toHaveText(
             'message#_ len:(## 7) { len <= 127 } text:(bits (len * 8)) = Message;',
         );
         await expect(source).toBeHidden();
         await picker.selectOption({ label: 'Maybe' });
-        await expect(mainPage.schemaField).toHaveValue(/nothing\$0/);
+        await expect(mainPage.schemaField).toHaveText(/nothing\$0/);
         await expect(mainPage.bocField).not.toHaveValue('');
-        await expect(mainPage.dataField).toHaveValue(/Maybe_just/);
+        await expect(mainPage.dataField).toHaveText(/Maybe_just/);
         await expect(source).toHaveAccessibleName('Open Maybe in TON Docs');
         await expect(source).toHaveAttribute('href', /simple-examples#maybe$/);
         await picker.selectOption({ label: 'VmTuple' });
-        await expect(mainPage.dataField).toHaveValue(/VmStackValue_vm_stk_tuple/);
+        await expect(mainPage.dataField).toHaveText(/VmStackValue_vm_stk_tuple/);
         await expect(source).toHaveAccessibleName('Open VmTuple in TON Docs');
         await expect(source).toHaveAttribute('href', /#vmtuple$/);
         await mainPage.schemaField.fill('_ x:# = Custom;');
@@ -45,9 +45,9 @@ test.describe('UI Functionality E2E Tests', () => {
         await mainPage.bocField.fill('');
         await mainPage.bocField.fill(boc);
         await expect(root.locator('option')).toHaveText(['Choose a type', 'A', 'B']);
-        await expect(mainPage.dataField).toHaveValue('');
+        await expect(mainPage.dataField.locator('.cm-placeholder')).toBeVisible();
         await root.selectOption({ label: 'B' });
-        await expect(mainPage.dataField).toHaveValue(/"kind": "B"/);
+        await expect(mainPage.dataField).toHaveText(/"kind": "B"/);
         await mainPage.dataField.fill('{"kind":"A","x":43}');
         await expect(root).toBeHidden();
         await mainPage.dataField.fill('{"x":43}');
@@ -56,7 +56,7 @@ test.describe('UI Functionality E2E Tests', () => {
         await mainPage.schemaField.fill('_ x:uint16 = Short; _ y:uint32 = B;');
         await mainPage.bocField.fill(boc);
         await expect(root).toBeHidden();
-        await expect(mainPage.dataField).toHaveValue(/"kind": "B"/);
+        await expect(mainPage.dataField).toHaveText(/"kind": "B"/);
     });
 
     test('should display validation errors', async () => {
@@ -110,7 +110,7 @@ test.describe('UI Functionality E2E Tests', () => {
         const bocValue = await mainPage.getBocValue();
         const dataValue = await mainPage.getDataValue();
 
-        expect(schemaValue).toContain('message#_');
+        expect(schemaValue).toBe('');
         expect(bocValue).toBe('');
         expect(dataValue).toBe('');
 
@@ -202,15 +202,15 @@ test('restores linked samples and navigates their history', async ({ page }) => 
     await page.goBack();
     await expect(selected).toHaveText('DNS record set');
     await page.goForward();
-    await expect(page.locator('#data')).toHaveValue(/Maybe_just/);
+    await expect(page.locator('#data')).toHaveText(/Maybe_just/);
 });
 
 test('shares only the current schema and BoC', async ({ page }) => {
     await page.goto('./');
     await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { value: undefined }));
-    const schema = await page.locator('#schema').inputValue();
+    const schema = await page.locator('#schema').innerText();
     const boc = await page.locator('#boc').inputValue();
-    const data = await page.locator('#data').inputValue();
+    const data = await page.locator('#data').innerText();
     await page.getByRole('button', { name: 'Share' }).click();
     const link = await page.getByRole('textbox', { name: 'Link to copy' }).inputValue();
     const params = new URLSearchParams(new URL(link).hash.slice(1));
@@ -219,7 +219,7 @@ test('shares only the current schema and BoC', async ({ page }) => {
         ['boc', boc],
     ]);
     await page.goto(link);
-    await expect(page.locator('#data')).toHaveValue(data);
+    await expect(page.locator('#data')).toHaveText(data, { useInnerText: true });
 });
 
 test('centers the footer signature on mobile and desktop', async ({ page }) => {
@@ -235,7 +235,7 @@ test('opens the DNS ADNL address as hex and encodes it back into the sample BoC'
     await page.goto('./#dns-adnl-address');
     const boc = await page.locator('#boc').inputValue();
     const editor = page.locator('#data');
-    const record = JSON.parse(await editor.inputValue());
+    const record = JSON.parse(await editor.innerText());
     expect(record.adnl_addr).toEqual({ $bits: '7B'.padStart(64, '0') });
     await editor.fill(JSON.stringify(record));
     await expect(page.locator('#boc')).toHaveValue(boc);
@@ -261,4 +261,60 @@ test('shows the entire integer range error and clears it after correction', asyn
     await expect(error).toBeEmpty();
     await expect(editor).not.toHaveAttribute('aria-invalid', 'true');
     await expect(page.locator('#boc')).not.toHaveValue('');
+});
+
+test('links TL-B and JSON colors and inspects independent BoC structure', async ({ page }) => {
+    await page.goto('./#dns');
+    await expect(page.locator('#schema .tok-tag').first()).toBeVisible();
+    await expect(page.locator('#data .json-kind').first()).toHaveText('"DNSRecordSet"');
+    await expect(page.locator('#cell-stats')).toHaveText('3 cells · root: 1 bit · 1 ref');
+    await page.getByText('Inspect cells', { exact: true }).click();
+    await expect(page.locator('#cell-list li')).toHaveCount(3);
+    await expect(page.locator('#cell-list li').first()).toContainText('Refs → #1');
+    await page.locator('#schema').fill('broken schema');
+    await expect(page.locator('#schema-error')).not.toBeEmpty();
+    await expect(page.locator('#cell-list li')).toHaveCount(3);
+    await page.locator('#boc').fill('bad BoC');
+    await expect(page.locator('#cell-inspector')).toBeHidden();
+});
+
+test('preserves in-progress JSON, cursor position, folding and mobile editor input', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 700 });
+    await page.goto('./#dns-adnl-address');
+    await expect(page.locator('#data .json-bits')).toHaveText(/007B"/);
+    await page.locator('#data-editor .cm-foldGutter .cm-gutterElement').filter({ hasText: '⌄' }).first().click();
+    await expect(page.locator('#data-editor .cm-foldPlaceholder')).toBeVisible();
+    await page.locator('#data-editor .cm-foldPlaceholder').click();
+    const data = page.getByRole('textbox', { name: 'Data', exact: true });
+    await data.fill('{"kind":"');
+    await data.press('End');
+    await page.keyboard.insertText('Long');
+    await expect(data).toHaveText('{"kind":"Long');
+    await page.goto(
+        './#schema=long%23800000000000001+x%3Auint7+%3D+Long%3B&boc=te6cckEBAQEACwAAEYAAAAAAAAAQcJqaShY%3D',
+    );
+    await data.fill('{"kind":"Long","x":3}');
+    await data.press('End');
+    await data.press('ArrowLeft');
+    await page.keyboard.insertText('4');
+    await expect(data).toHaveText('{"kind":"Long","x":34}');
+    await page.keyboard.insertText(' ');
+    await expect(data).toHaveText('{"kind":"Long","x":34 }');
+    await expect(page.locator('#data-error')).toBeEmpty();
+});
+
+test('inspects shared references and BoCs with multiple roots', async ({ page }) => {
+    await page.goto('./');
+    const boc = page.locator('#boc');
+    await boc.fill('b5ee9c7241010201000700020001010001f8f126ff3a');
+    await expect(page.locator('#cell-stats')).toHaveText('2 cells · root: 0 bits · 2 refs');
+    await page.locator('#cell-inspector summary').click();
+    const links = page.getByRole('button', { name: 'Go to cell 1', exact: true });
+    await expect(links).toHaveCount(2);
+    await links.last().click();
+    await expect(page.locator('#cell-list li').nth(1)).toBeFocused();
+    await boc.fill('b5ee9c7201010202000600010002aa0002bb');
+    await expect(page.locator('#cell-stats')).toHaveText('2 cells · 2 roots');
+    await expect(page.locator('#cell-list code')).toHaveText(['x{AA}', 'x{BB}']);
+    await expect(page.locator('#boc-error')).toContainText('single root');
 });

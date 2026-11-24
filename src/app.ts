@@ -2,6 +2,8 @@ import { Result } from '@ton-community/tlb-runtime';
 
 import catalog from './samples.json';
 import { CellProcessor, defaultBoc, defaultSchema, Focus, TLBData } from './cell-processor';
+import { CodeEditor } from './editor/code-editor';
+import { CellInspector } from './cell-inspector';
 
 interface Sample {
     id?: string;
@@ -30,33 +32,29 @@ export class App {
     private readonly samplePicker = document.querySelector<HTMLSelectElement>('#docs-sample')!;
     private readonly sampleSource = document.querySelector<HTMLAnchorElement>('#sample-source')!;
     private readonly processor: CellProcessor;
-    private schemaField: HTMLTextAreaElement | null = null;
-    private bocField: HTMLTextAreaElement | null = null;
-    private dataField: HTMLTextAreaElement | null = null;
-    private schemaErrorSpan: HTMLSpanElement | null = null;
-    private bocErrorSpan: HTMLSpanElement | null = null;
-    private dataErrorSpan: HTMLSpanElement | null = null;
-    private isUpdating = false;
+    private readonly schemaField = new CodeEditor('schema', (value) => {
+        this.beginEdit();
+        this.handleSchemaChange(value);
+        this.inspector.update(this.bocField.value);
+    });
+    private readonly dataField = new CodeEditor('data', (value) => {
+        this.beginEdit();
+        this.handleDataChange(value);
+        this.inspector.update(this.bocField.value);
+    });
+    private readonly bocField = document.querySelector<HTMLTextAreaElement>('#boc')!;
+    private readonly inspector = new CellInspector();
     private focus = Focus.boc;
+    private schemaReady = true;
     private readonly rootSelect = document.querySelector<HTMLSelectElement>('#root-type')!;
     private readonly argumentsBox = document.querySelector<HTMLElement>('#root-arguments')!;
 
     constructor() {
         this.processor = CellProcessor.default;
-        this.initializeUI();
         this.setupSamplePicker();
         this.setupEventListeners();
         this.openFragment();
         window.addEventListener('hashchange', () => this.openFragment());
-    }
-
-    private initializeUI() {
-        this.schemaField = document.querySelector('textarea[name="schema"]');
-        this.bocField = document.querySelector('textarea[name="boc"]');
-        this.dataField = document.querySelector('textarea[name="data"]');
-        this.schemaErrorSpan = document.getElementById('schema-error');
-        this.bocErrorSpan = document.getElementById('boc-error');
-        this.dataErrorSpan = document.getElementById('data-error');
     }
 
     private setupSamplePicker() {
@@ -111,16 +109,18 @@ export class App {
         this.processor.updateBoc('');
         for (const field of ['schema', 'boc', 'data']) this.hideFieldError(field);
         const result = this.processor.updateSchema(schema);
+        this.schemaReady = result.success;
         this.handleResult(result, 'schema');
         if (result.success) {
             const decoded = this.processor.updateBoc(boc);
             this.handleResult(decoded, 'boc');
-            if (!decoded.success) this.dataField!.value = '';
+            if (!decoded.success) this.dataField.value = '';
         } else {
-            this.dataField!.value = '';
+            this.dataField.value = '';
         }
-        this.schemaField!.value = schema;
-        this.bocField!.value = boc;
+        this.schemaField.value = schema;
+        this.bocField.value = boc;
+        this.inspector.update(boc);
         this.refreshRootInput();
         if (sample?.kind && this.processor.choices.length > 1) {
             const choice = this.processor.choices.findIndex((entry) => entry.kind === sample.kind && entry.value);
@@ -134,7 +134,7 @@ export class App {
     private async share() {
         const url = new URL(window.location.href);
         url.search = '';
-        url.hash = new URLSearchParams({ schema: this.schemaField!.value, boc: this.bocField!.value }).toString();
+        url.hash = new URLSearchParams({ schema: this.schemaField.value, boc: this.bocField.value }).toString();
         const status = document.querySelector<HTMLElement>('#share-status')!;
         try {
             await window.navigator.clipboard.writeText(url.href);
@@ -150,38 +150,21 @@ export class App {
 
     private setupEventListeners() {
         document.querySelector('#share')!.addEventListener('click', () => this.share());
-        for (const field of [this.schemaField, this.bocField, this.dataField]) {
-            field?.addEventListener('input', () => {
-                this.clearShareFeedback();
-                if (window.location.hash) {
-                    window.history.pushState(null, '', window.location.pathname + window.location.search);
-                    this.samplePicker.value = '';
-                    this.sampleSource.hidden = true;
-                    this.sampleSource.removeAttribute('href');
-                }
-            });
-        }
-        if (this.schemaField) {
-            this.schemaField.addEventListener('input', (e) => {
-                const target = e.target as HTMLTextAreaElement;
-                this.handleSchemaChange(target.value);
-            });
-        }
-
         this.rootSelect.addEventListener('change', () => this.showChoice());
-        if (this.bocField) {
-            this.bocField.addEventListener('input', (e) => {
-                const target = e.target as HTMLTextAreaElement;
-                this.handleBocChange(target.value);
-            });
-        }
+        this.bocField.addEventListener('input', () => {
+            this.beginEdit();
+            this.handleBocChange(this.bocField.value);
+            this.inspector.update(this.bocField.value);
+        });
+    }
 
-        if (this.dataField) {
-            this.dataField.addEventListener('input', (e) => {
-                const target = e.target as HTMLTextAreaElement;
-                this.handleDataChange(target.value);
-            });
-        }
+    private beginEdit() {
+        this.clearShareFeedback();
+        if (!window.location.hash) return;
+        window.history.pushState(null, '', window.location.pathname + window.location.search);
+        this.samplePicker.value = '';
+        this.sampleSource.hidden = true;
+        this.sampleSource.removeAttribute('href');
     }
 
     private refreshRootInput() {
@@ -203,7 +186,7 @@ export class App {
         const choice = this.processor.choices[index];
         this.argumentsBox.replaceChildren();
         this.argumentsBox.hidden = true;
-        if (this.dataField) this.dataField.value = '';
+        this.dataField.value = '';
         this.hideFieldError('boc');
         if (!choice) return;
         if (choice.value) {
@@ -223,7 +206,7 @@ export class App {
             label.append(input);
             this.argumentsBox.append(label);
             input.addEventListener('input', () => {
-                if (this.dataField) this.dataField.value = '';
+                this.dataField.value = '';
                 this.hideFieldError('boc');
                 if ([...inputs.values()].some((field) => !field.value || !field.validity.valid)) return;
                 const args = choice.args.map((item, i) =>
@@ -236,126 +219,81 @@ export class App {
     }
 
     private handleSchemaChange(newSchema: string) {
-        if (this.isUpdating) return;
-
         this.samplePicker.value = '';
         this.sampleSource.hidden = true;
         this.sampleSource.removeAttribute('href');
         const result = this.processor.updateSchema(newSchema, this.focus);
+        this.schemaReady = result.success || this.processor.state.schema === newSchema;
         this.refreshRootInput();
         this.hideFieldError('boc');
         if (!result.success) {
-            if (this.focus === Focus.boc && this.dataField) this.dataField.value = '';
-            if (this.focus === Focus.data && this.bocField) this.bocField.value = '';
+            if (this.focus === Focus.boc) this.dataField.value = '';
+            if (this.focus === Focus.data) this.bocField.value = '';
         }
         this.handleResult(result, 'schema');
     }
 
     private handleBocChange(newBoc: string) {
-        if (this.isUpdating) return;
         this.focus = Focus.boc;
         const result = this.processor.updateBoc(newBoc);
-        if (!result.success && this.dataField) this.dataField.value = '';
+        if (!this.schemaReady) {
+            this.dataField.value = '';
+            return;
+        }
+        if (!result.success) this.dataField.value = '';
         this.hideFieldError('data');
         this.handleResult(result, 'boc');
         this.refreshRootInput();
     }
 
     private handleDataChange(newData: string) {
-        if (this.isUpdating) return;
-
         this.focus = Focus.data;
         const result = this.processor.updateData(newData);
+        if (!this.schemaReady) {
+            this.bocField.value = '';
+            if (!result.success) this.showFieldError(result.error.message, 'data');
+            return;
+        }
         this.refreshRootInput();
         this.hideFieldError('boc');
-        if (!result.success && this.bocField) this.bocField.value = '';
-        this.handleResult(result, 'data');
+        if (!result.success) this.bocField.value = '';
+        // Keep the edited JSON verbatim, including trailing whitespace and the current selection.
+        if (result.success) {
+            this.hideFieldError('data');
+            this.bocField.value = result.value.boc;
+        } else {
+            this.showFieldError(result.error.message, 'data');
+        }
     }
 
     private handleResult(result: Result<TLBData>, field: string) {
         if (result.success) {
             this.hideFieldError(field);
-            this.updateFieldsFromData(result.value);
+            this.schemaField.value = result.value.schema;
+            this.bocField.value = result.value.boc;
+            this.dataField.value = result.value.data;
         } else {
             this.showFieldError(result.error.message, field);
         }
     }
 
-    private updateFieldsFromData(data: TLBData) {
-        this.isUpdating = true;
-
-        try {
-            if (this.schemaField && this.schemaField.value !== data.schema) {
-                this.schemaField.value = data.schema;
-            }
-            if (this.bocField && this.bocField.value !== data.boc) {
-                this.bocField.value = data.boc;
-            }
-            if (this.dataField && this.dataField.value !== data.data) {
-                this.dataField.value = data.data;
-            }
-        } finally {
-            this.isUpdating = false;
-        }
-    }
-
     private showFieldError(message: string, field: string) {
-        let errorSpan: HTMLSpanElement | null = null;
-        let textarea: HTMLTextAreaElement | null = null;
-
-        switch (field) {
-            case 'schema':
-                errorSpan = this.schemaErrorSpan;
-                textarea = this.schemaField;
-                break;
-            case 'boc':
-                errorSpan = this.bocErrorSpan;
-                textarea = this.bocField;
-                break;
-            case 'data':
-                errorSpan = this.dataErrorSpan;
-                textarea = this.dataField;
-                break;
+        const errorSpan = document.getElementById(field + '-error')!;
+        const editor = document.getElementById(field)!;
+        const overflow = /^Encode bitLength is too small for a value (-?\d+)\. Got (\d+)$/.exec(message);
+        if (overflow && Number(overflow[2]) <= 1023) {
+            const [, value, bits] = overflow;
+            const max = (1n << BigInt(bits)) - 1n;
+            errorSpan.textContent = `Value ${value} is outside the range for uint${bits}. Use 0 to ${max}.`;
+        } else {
+            errorSpan.textContent = message;
         }
-
-        if (errorSpan && textarea) {
-            const overflow = /^Encode bitLength is too small for a value (-?\d+)\. Got (\d+)$/.exec(message);
-            if (overflow && Number(overflow[2]) <= 1023) {
-                const [, value, bits] = overflow;
-                const max = (1n << BigInt(bits)) - 1n;
-                errorSpan.textContent = `Value ${value} is outside the range for uint${bits}. Use 0 to ${max}.`;
-            } else {
-                errorSpan.textContent = message;
-            }
-            textarea.setAttribute('aria-invalid', 'true');
-            textarea.classList.add('field-error-border');
-        }
+        editor.setAttribute('aria-invalid', 'true');
     }
 
     private hideFieldError(field: string) {
-        let errorSpan: HTMLSpanElement | null = null;
-        let textarea: HTMLTextAreaElement | null = null;
-
-        switch (field) {
-            case 'schema':
-                errorSpan = this.schemaErrorSpan;
-                textarea = this.schemaField;
-                break;
-            case 'boc':
-                errorSpan = this.bocErrorSpan;
-                textarea = this.bocField;
-                break;
-            case 'data':
-                errorSpan = this.dataErrorSpan;
-                textarea = this.dataField;
-                break;
-        }
-
-        if (errorSpan && textarea) {
-            errorSpan.textContent = '';
-            textarea.removeAttribute('aria-invalid');
-            textarea.classList.remove('field-error-border');
-        }
+        document.getElementById(field + '-error')!.textContent = '';
+        document.getElementById(field)!.removeAttribute('aria-invalid');
     }
 }
 

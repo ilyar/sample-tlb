@@ -1,0 +1,26 @@
+@top Schema { Declaration* }
+
+Declaration { Constructor Tag? part* "=" ResultType part* ";" }
+Constructor { identifier }
+ResultType { identifier | TypeName }
+part { Property | identifier | TypeName | Builtin | Number | Operator | Group | Braces | Brackets }
+Property { FieldName ":" }
+FieldName { identifier | TypeName | Builtin }
+Group { "(" (part | "=")* ")" }
+Braces { "{" (part | "=")* "}" }
+Brackets { "[" (part | "=")* "]" }
+
+@skip { space | LineComment | BlockComment }
+@tokens {
+  space { @whitespace+ }
+  LineComment { "//" ![\n]* }
+  BlockComment { "/*" (![\*] | "*"+ ![/\*])* "*"+ "/" }
+  identifier { $[a-z_] $[A-Za-z_0-9]* }
+  TypeName { $[A-Z] $[A-Za-z_0-9]* }
+  Builtin { ("uint" | "int" | "bits") @digit* | "##" | "#<=" | "#<" | "#" }
+  Tag { "#" ($[0-9a-fA-F]+ "_" ? | "_") | "$" ($[01]+ | "_") }
+  Number { @digit+ }
+  Operator { "^" | "~" | "+" | "-" | "*" | "?" | "." | "<=" | ">=" | "<" | ">" | "!=" }
+  @precedence { Tag, Builtin, identifier }
+}
+@detectDelim

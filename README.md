@@ -4,6 +4,8 @@ The demo uses runtime `1.0.0-alpha.5` built from [commit ef997f3](https://github
 
 Paste a BoC to decode it against the schema. A unique match opens automatically. If several types fit the cell, choose one under **Decode as**. When a numeric argument is missing from the wire, the editor asks for that argument. To encode JSON, set its `kind` to the type or constructor name.
 
+TL-B and JSON use matching syntax colors for field names and types. In JSON, fold a nested object with its gutter arrow. Use **Inspect cells** to see the bits and references in a BoC, including when its schema is incomplete.
+
 The JSON editor represents a cell as `{"$cell":"<base64 BoC>"}`, a raw bit string as `{"$bits":"<TON hex>"}`, and an external address as `{"$external":[48,"5623048054"]}`. Dictionary properties are the decimal keys.
 
 ## Documentation samples
