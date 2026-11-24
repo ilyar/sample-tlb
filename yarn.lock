@@ -1054,9 +1054,9 @@
   dependencies:
     ohm-js "^v17.2.1"
 
-"@ton-community/tlb-runtime@file:vendor/tlb-runtime-b640498.tgz":
+"@ton-community/tlb-runtime@file:vendor/tlb-runtime-ef997f3.tgz":
   version "1.0.0-alpha.5"
-  resolved "file:vendor/tlb-runtime-b640498.tgz#83a2d9f6204a73c5976cc506cdbabe2e425f212d"
+  resolved "file:vendor/tlb-runtime-ef997f3.tgz#e9540943b4869fb749d9ec7aa96f22c072aa7211"
   dependencies:
     "@ton-community/tlb-codegen" "2.0.0-beta.3"
     "@ton-community/tlb-parser" "https://gist.github.com/ilyar/baac357ceafa1112161418d7df5247b9/raw/3d7cf9e6cfe85e7d0321319f372dc2d12d11d4ce/ton-community-tlb-parser-0.2.0.tgz"
