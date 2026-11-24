@@ -393,3 +393,28 @@ h1 a {
         font-size: 0.8em;
     }
 }
+
+.schema-field .label-row {
+    justify-content: flex-start;
+    gap: 0.5rem;
+}
+
+#docs-sample {
+    field-sizing: content;
+    min-width: 0;
+    max-width: 100%;
+    font: inherit;
+    font-size: 0.88em;
+    color: var(--link-hover);
+    background-color: var(--bg-primary);
+    border: 0;
+    cursor: pointer;
+    text-overflow: ellipsis;
+}
+
+#sample-source {
+    align-self: flex-start;
+    margin-bottom: 0.4rem;
+    font-size: 0.85em;
+    text-decoration: underline;
+}
