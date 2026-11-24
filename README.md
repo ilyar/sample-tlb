@@ -24,3 +24,7 @@ yarn lint
 yarn test
 yarn test:e2e
 ```
+
+## Favicon
+
+The [TL-B file icon](https://github.com/ton-blockchain/intellij-ton/blob/de8d39a64ad33f1170d615f7e7f97a02e2d33beb/modules/tlb/resources/icons/tlb.svg) comes from intellij-ton. The demo uses opaque lettering and an opaque amber label for contrast at tab size. The icon is distributed under the [GNU GPL v3](public/licenses/tlb-icon.txt).
