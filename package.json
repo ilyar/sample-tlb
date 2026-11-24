@@ -34,7 +34,7 @@
     "@lezer/lr": "^1.4.12",
     "@playwright/test": "^1.54.2",
     "@resvg/resvg-js": "^2.6.2",
-    "@ton-community/tlb-runtime": "file:vendor/tlb-runtime-06ed70e.tgz",
+    "@ton-community/tlb-runtime": "file:vendor/tlb-runtime-97ff1db.tgz",
     "@ton/core": "^0.63.0",
     "@ton/toolchain": "the-ton-tech/toolchain#v1",
     "@types/jest": "^30.0.0",
