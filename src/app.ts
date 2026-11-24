@@ -36,6 +36,11 @@ export class App {
             });
         }
 
+        const root = document.querySelector<HTMLInputElement>('#root-type');
+        root?.addEventListener('input', () => {
+            this.handleResult(this.processor.updateRoot(root.value), 'boc');
+        });
+
         if (this.bocField) {
             this.bocField.addEventListener('input', (e) => {
                 const target = e.target as HTMLTextAreaElement;

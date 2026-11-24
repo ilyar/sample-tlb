@@ -24,6 +24,20 @@ describe('CellProcessor', () => {
         });
     });
 
+    it('decodes a parameterized root and re-encodes edited raw bits', () => {
+        const proc = CellProcessor.from('_ {n:#} v:(bits n) = Bits n; _ x:uint32 = Other;');
+        proc.updateRoot('Bits 3');
+        const encoded = proc.updateData('{"kind":"Bits","n":3,"v":{"$bits":"B_"}}');
+        expect(encoded.success).toBe(true);
+        const decoded = proc.updateBoc((encoded as Success<TLBData>).value.boc);
+        expect(JSON.parse((decoded as Success<TLBData>).value.data)).toEqual({
+            kind: 'Bits',
+            n: 3,
+            v: { $bits: 'B_' },
+        });
+        expect(proc.updateRoot('Bits -1').success).toBe(false);
+    });
+
     it('should update schema successfully with focus on BoC', () => {
         const newSchema = '_ x:# = Foo;';
         const actual = proc.updateSchema(newSchema, Focus.boc);

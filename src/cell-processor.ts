@@ -1,3 +1,4 @@
+import { beginCell, BitString, Cell, Dictionary, ExternalAddress } from '@ton/core';
 import { TLBRuntime, Result, unwrap, replacer, blockSchema } from '@ton-community/tlb-runtime';
 
 export const defaultSchema = 'message#_ len:(## 7) { len <= 127 } text:(bits (len * 8)) = Message;';
@@ -21,9 +22,45 @@ export interface TLBData {
     data: string;
 }
 
+function displayValue(key: string, value: unknown): unknown {
+    if (value instanceof Cell) return { $cell: value.toBoc().toString('base64') };
+    if (value instanceof BitString) return { $bits: value.toString() };
+    if (value instanceof ExternalAddress) return { $external: [value.bits, value.value.toString()] };
+    if (value instanceof Dictionary) return Object.fromEntries(Array.from(value, ([k, v]) => [String(k), v]));
+    return replacer(key, value);
+}
+
+function readValue(_key: string, value: unknown): unknown {
+    if (!value || typeof value !== 'object' || Object.keys(value).length !== 1) return value;
+    if ('$cell' in value && typeof value.$cell === 'string') return Cell.fromBase64(value.$cell);
+    if ('$bits' in value && typeof value.$bits === 'string') {
+        const hex = value.$bits;
+        if (!/^(?:[0-9a-f]+_?)?$/i.test(hex)) throw new Error('Invalid hexadecimal bit string');
+        const digits = hex.replace(/_$/, '');
+        let length = digits.length * 4;
+        let n = digits ? BigInt('0x' + digits) : 0n;
+        if (hex.endsWith('_')) {
+            if (!n || !(n & 15n)) throw new Error('Invalid bit string terminator');
+            while (!(n & 1n)) {
+                n >>= 1n;
+                length--;
+            }
+            n >>= 1n;
+            length--;
+        }
+        return beginCell().storeUint(n, length).endCell().bits;
+    }
+    if ('$external' in value && Array.isArray(value.$external)) {
+        const [bits, address] = value.$external;
+        return new ExternalAddress(BigInt(address), bits);
+    }
+    return value;
+}
+
 export class CellProcessor {
     private bocFormat: DataFormat = DataFormat.base64;
     private boc: string = '';
+    private root = '';
     private data: string = '{}';
     private runtime: TLBRuntime = unwrap(TLBRuntime.from(''));
 
@@ -85,6 +122,11 @@ export class CellProcessor {
         return this.updateData(this.data);
     }
 
+    public updateRoot(root: string): Result<TLBData> {
+        this.root = root.trim();
+        return this.updateBoc(this.boc);
+    }
+
     public updateBoc(newBoc: string): Result<TLBData> {
         if (!newBoc || newBoc.trim() === '') {
             this.boc = '';
@@ -97,8 +139,11 @@ export class CellProcessor {
 
         this.boc = newBoc;
         try {
-            const decoded = this.runtime.decodeCell(this.boc);
-            this.data = JSON.stringify(decoded, replacer, 2);
+            const [rootType, ...parameters] = this.root.split(/\s+/);
+            if (parameters.some((p) => !/^\d+$/.test(p))) throw new Error('Expected natural number arguments');
+            const options = rootType ? { rootType, args: parameters.map(Number) } : undefined;
+            const decoded = this.runtime.decodeCell(this.boc, options);
+            this.data = JSON.stringify(decoded, displayValue, 2);
         } catch (error) {
             return {
                 success: false,
@@ -114,7 +159,7 @@ export class CellProcessor {
     public updateData(newData: string): Result<TLBData> {
         this.data = newData.trim();
         try {
-            const data = JSON.parse(this.data);
+            const data = JSON.parse(this.data, readValue);
             const encoded = this.runtime.encodeCell(data).toBoc();
             switch (this.bocFormat) {
                 case DataFormat.hex:
