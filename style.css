@@ -316,6 +316,23 @@ select:hover {
     color: var(--tag);
     overflow-wrap: anywhere;
 }
+#cell-list .cell-hash {
+    flex-basis: 100%;
+    min-width: 0;
+    margin-top: 4px;
+}
+#cell-list .cell-hash summary,
+#cell-list .cell-hash code {
+    font: 12px/1.6 var(--mono);
+}
+#cell-list .cell-hash summary {
+    color: var(--muted);
+}
+#cell-list .cell-hash code {
+    display: block;
+    color: var(--text);
+    user-select: all;
+}
 #app .ilyar-footer {
     justify-content: center !important;
     min-height: 82px;
