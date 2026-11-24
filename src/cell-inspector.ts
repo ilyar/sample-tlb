@@ -1,6 +1,6 @@
 import { Cell } from '@ton/core';
 
-import { readBocRoots } from './cell-processor';
+import { readBocRoots } from './share-format';
 
 function count(n: number, word: string) {
     return `${n} ${word}${n === 1 ? '' : 's'}`;

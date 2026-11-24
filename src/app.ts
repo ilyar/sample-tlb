@@ -4,6 +4,7 @@ import catalog from './samples.json';
 import { CellProcessor, defaultBoc, defaultSchema, Focus, TLBData } from './cell-processor';
 import { CodeEditor } from './editor/code-editor';
 import { CellInspector } from './cell-inspector';
+import { encodeShare, parseShareHash } from './share-format';
 
 interface Sample {
     id?: string;
@@ -46,6 +47,7 @@ export class App {
     private readonly inspector = new CellInspector();
     private focus = Focus.boc;
     private schemaReady = true;
+    private fragmentRevision = 0;
     private readonly rootSelect = document.querySelector<HTMLSelectElement>('#root-type')!;
     private readonly argumentsBox = document.querySelector<HTMLElement>('#root-arguments')!;
 
@@ -53,8 +55,8 @@ export class App {
         this.processor = CellProcessor.default;
         this.setupSamplePicker();
         this.setupEventListeners();
-        this.openFragment();
-        window.addEventListener('hashchange', () => this.openFragment());
+        void this.openFragment();
+        window.addEventListener('hashchange', () => void this.openFragment());
     }
 
     private setupSamplePicker() {
@@ -86,15 +88,16 @@ export class App {
         document.querySelector<HTMLInputElement>('#share-link')!.hidden = true;
     }
 
-    private openFragment() {
+    private async openFragment() {
+        const revision = ++this.fragmentRevision;
         this.clearShareFeedback();
         const fragment = window.location.hash.slice(1);
+        const shared = await parseShareHash(fragment);
+        if (revision !== this.fragmentRevision || window.location.hash.slice(1) !== fragment) return;
         const index = samples.findIndex((entry) => sampleId(entry) === fragment);
         const sample = samples[index];
-        const params = new URLSearchParams(fragment);
-        const shared = params.has('schema') && params.has('boc');
-        const schema = shared ? params.get('schema')! : (sample?.schema ?? defaultSchema);
-        const boc = shared ? params.get('boc')! : (sample?.boc ?? defaultBoc);
+        const schema = shared?.schema ?? sample?.schema ?? defaultSchema;
+        const boc = shared?.boc ?? sample?.boc ?? defaultBoc;
         this.samplePicker.value = sample ? String(index) : '';
         this.sampleSource.hidden = !sample?.documentation;
         if (sample?.documentation) {
@@ -122,35 +125,72 @@ export class App {
         this.bocField.value = boc;
         this.inspector.update(boc);
         this.refreshRootInput();
-        if (sample?.kind && this.processor.choices.length > 1) {
-            const choice = this.processor.choices.findIndex((entry) => entry.kind === sample.kind && entry.value);
-            if (choice >= 0) {
-                this.rootSelect.value = String(choice);
-                this.showChoice();
-            }
+        const choice = this.processor.choices.findIndex((entry) =>
+            shared?.decodeAs ? entry.label === shared.decodeAs : entry.kind === sample?.kind && entry.value,
+        );
+        if (choice >= 0) {
+            this.rootSelect.value = String(choice);
+            this.showChoice();
         }
     }
 
     private async share() {
+        this.clearShareFeedback();
+        const revision = ++this.fragmentRevision;
+        const status = document.querySelector<HTMLElement>('#share-status')!;
         const url = new URL(window.location.href);
         url.search = '';
-        url.hash = new URLSearchParams({ schema: this.schemaField.value, boc: this.bocField.value }).toString();
-        const status = document.querySelector<HTMLElement>('#share-status')!;
+        const selected = this.rootSelect.value;
+        const link = encodeShare({
+            schema: this.schemaField.value,
+            boc: this.bocField.value,
+            decodeAs: selected ? this.processor.choices[Number(selected)]?.label : undefined,
+        }).then((encoded) => {
+            url.hash = 'tlb=' + encoded;
+            if (revision === this.fragmentRevision) window.history.replaceState(null, '', url);
+            return url.href;
+        });
+
+        // Start clipboard.write during the click. Safari checks activation before compression finishes.
+        const clipboard = navigator.clipboard;
+        const copy = async () => {
+            if (clipboard?.write && typeof window.ClipboardItem !== 'undefined') {
+                const text = link.then((href) => new Blob([href], { type: 'text/plain' }));
+                // The browser can reject the write before consuming the item's promise.
+                void text.catch(() => {});
+                await clipboard.write([new window.ClipboardItem({ 'text/plain': text })]);
+            } else if (clipboard?.writeText) {
+                await clipboard.writeText(await link);
+            } else {
+                return false;
+            }
+            return true;
+        };
+
         try {
-            await window.navigator.clipboard.writeText(url.href);
-            status.textContent = 'Link copied';
-        } catch {
-            const link = document.querySelector<HTMLInputElement>('#share-link')!;
-            link.value = url.href;
-            link.hidden = false;
-            link.select();
-            status.textContent = 'Copy this link';
+            const [href, copied] = await Promise.all([link, copy().catch(() => false)]);
+            if (revision !== this.fragmentRevision) return;
+            if (!copied) {
+                const field = document.querySelector<HTMLInputElement>('#share-link')!;
+                field.value = href;
+                field.hidden = false;
+                field.select();
+            }
+            status.textContent = copied ? 'Link copied' : 'Copy this link';
+            if (href.length > 4000) status.textContent += ' · This link exceeds 4,000 characters.';
+        } catch (error) {
+            if (revision === this.fragmentRevision) {
+                status.textContent = error instanceof Error ? error.message : 'Unable to create share link';
+            }
         }
     }
 
     private setupEventListeners() {
         document.querySelector('#share')!.addEventListener('click', () => this.share());
-        this.rootSelect.addEventListener('change', () => this.showChoice());
+        this.rootSelect.addEventListener('change', () => {
+            this.beginEdit();
+            this.showChoice();
+        });
         this.bocField.addEventListener('input', () => {
             this.beginEdit();
             this.handleBocChange(this.bocField.value);
@@ -159,6 +199,7 @@ export class App {
     }
 
     private beginEdit() {
+        this.fragmentRevision++;
         this.clearShareFeedback();
         if (!window.location.hash) return;
         window.history.pushState(null, '', window.location.pathname + window.location.search);

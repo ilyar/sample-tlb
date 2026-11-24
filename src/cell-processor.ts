@@ -1,16 +1,12 @@
 import { beginCell, BitString, Cell, Dictionary, ExternalAddress } from '@ton/core';
 import { TLBRuntime, Result, unwrap, replacer, blockSchema } from '@ton-community/tlb-runtime';
 
+import { readBocRoots } from './share-format';
 import { DecodeChoice, decodeChoices, withArguments } from './decode-choices';
 
 export const defaultSchema = 'message#_ len:(## 7) { len <= 127 } text:(bits (len * 8)) = Message;';
 
 export const defaultBoc = 'te6cckEBAQEAFwAAKSioyuboQNrK5ubCzspA0txAxsrY2Whv0fw=';
-
-export function readBocRoots(raw: string): Cell[] {
-    const hex = /^(b5ee9c72|68ff65f3|acc3a728)/i.test(raw);
-    return Cell.fromBoc(Buffer.from(raw, hex ? 'hex' : 'base64'));
-}
 
 export enum DataFormat {
     hex,

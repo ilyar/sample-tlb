@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { test, expect } from '@playwright/test';
 
 import { MainPage, testData } from './app';
@@ -215,21 +217,50 @@ test('restores linked samples and navigates their history', async ({ page }) => 
     await expect(page.locator('#data')).toHaveText(/Maybe_just/);
 });
 
-test('shares only the current schema and BoC', async ({ page }) => {
+test('shares a selected root and restores it after reload', async ({ page }) => {
+    const schema = '_ x:uint1 = First; _ y:uint1 = Second;';
+    const boc = 'te6cckEBAQEAAwAAAcCO6ba2';
+    await page.goto('./#' + new URLSearchParams({ schema, boc }));
+    await page.locator('#root-type').selectOption({ label: 'Second' });
+    await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { value: undefined }));
+    await page.getByRole('button', { name: 'Share' }).click();
+    const field = page.getByRole('textbox', { name: 'Link to copy' });
+    await expect(field).toBeVisible();
+    const link = await field.inputValue();
+    expect(new URL(link).hash).toMatch(/^#tlb=[A-Za-z0-9_-]+$/);
+    expect(page.url()).toBe(link);
+    await page.reload();
+    await expect(page.locator('#schema')).toHaveText(schema);
+    await expect(page.locator('#boc')).toHaveValue(boc);
+    await expect(page.locator('#root-type option:checked')).toHaveText('Second');
+    await expect(page.locator('#data')).toHaveText(/"kind": "Second"/);
+});
+
+test('reads a share envelope pasted into BoC using the documented schema', async ({ page }) => {
+    await page.goto('./');
+    await expect(page.locator('#data')).toContainText('Message');
+    await page.getByRole('button', { name: 'Share' }).click();
+    await expect(page).toHaveURL(/#tlb=[A-Za-z0-9_-]+$/);
+    const payload = new URL(page.url()).hash.slice('#tlb='.length);
+    const schema = readFileSync('README.md', 'utf8').split('```tlb\n')[1].split('```')[0];
+    await page.locator('#schema').fill(schema);
+    await page.locator('#boc').fill(payload);
+    const selector = page.locator('#root-type');
+    if (await selector.isVisible()) await selector.selectOption({ label: 'SharePayload' });
+    await expect(page.locator('#data')).toContainText('"kind": "SharePayload"');
+    await expect(page.locator('#boc-error')).toBeEmpty();
+});
+
+test('warns about long share links and preserves raw BoC input', async ({ page }) => {
     await page.goto('./');
     await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { value: undefined }));
-    const schema = await page.locator('#schema').innerText();
-    const boc = await page.locator('#boc').inputValue();
-    const data = await page.locator('#data').innerText();
+    const raw = 'unfinished BoC '.repeat(240);
+    await page.locator('#boc').fill(raw);
     await page.getByRole('button', { name: 'Share' }).click();
-    const link = await page.getByRole('textbox', { name: 'Link to copy' }).inputValue();
-    const params = new URLSearchParams(new URL(link).hash.slice(1));
-    expect([...params.entries()]).toEqual([
-        ['schema', schema],
-        ['boc', boc],
-    ]);
-    await page.goto(link);
-    await expect(page.locator('#data')).toHaveText(data, { useInnerText: true });
+    await expect(page.locator('#share-status')).toContainText('4,000');
+    await expect(page.getByRole('textbox', { name: 'Link to copy' })).toBeVisible();
+    await page.reload();
+    await expect(page.locator('#boc')).toHaveValue(raw);
 });
 
 test('centers the footer signature on mobile and desktop', async ({ page }) => {
