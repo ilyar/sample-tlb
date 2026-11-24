@@ -1,0 +1,54 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap");
+
+.ilyar-footer {
+  color-scheme: light dark;
+  display: flex;
+  align-items: center;
+  /* Host pages can set ID-scoped footer alignment and padding. */
+  justify-content: flex-start !important;
+  box-sizing: border-box;
+  min-height: 96px;
+  margin: 0;
+  padding: 0 !important;
+  border: 0;
+  text-align: start;
+  color: light-dark(#292823, #edece6);
+  background: light-dark(#faf9f6, #1c1d1c);
+}
+.ilyar-footer.ilyar-footer-end { justify-content: flex-end !important; }
+
+.ilyar-footer .ilyar-signature {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: 400 16px/1.5 "JetBrains Mono", monospace;
+  letter-spacing: normal;
+  text-transform: none;
+  text-decoration: none;
+}
+.ilyar-signature:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+.ilyar-signature:is(:hover, :focus-visible) .ilyar-name { text-decoration: underline; text-underline-offset: 4px; }
+.ilyar-signature img {
+  display: block;
+  width: var(--ilyar-size);
+  height: var(--ilyar-size);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+}
+.ilyar-footer .ilyar-inline { font-size: max(14px, calc(var(--ilyar-size) / 2)); }
+.ilyar-inline .ilyar-name { font-weight: 600; }
+.ilyar-footer .ilyar-colophon { gap: 12px; }
+.ilyar-colophon .ilyar-text {
+  display: grid;
+  text-align: end;
+  border-inline-end: 1px solid currentColor;
+  padding-inline-end: 12px;
+}
+.ilyar-colophon .ilyar-credit { font-size: 14px; line-height: 16px; }
+.ilyar-colophon .ilyar-name { font-size: calc(var(--ilyar-size) - 16px); line-height: 1; }
+.ilyar-footer .ilyar-seal { min-width: 44px; justify-content: center; }
