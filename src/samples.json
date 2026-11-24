@@ -231,5 +231,15 @@
     "boc": "te6cckEBAwEAUgABAcABAUOgHRqIChDnt1DLVPguFWmZzJshBzRpufrZ7jopwECoh2NwAgBNn9OAAkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJAMhd04HZ2eQ==",
     "kind": "DNSRecordSet",
     "documentation": "https://docs.ton.org/foundations/tlb/tep-examples#dns"
+  },
+  {
+    "id": "tlb-share",
+    "group": "Usecase",
+    "title": "TL-B Share",
+    "schema": "bool_false$0 = Bool;\nbool_true$1 = Bool;\nnothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\n\nsnake_bytes#_ len:(## 10) data:(bits len) next:(Maybe ^SnakeBytes) = SnakeBytes;\nboc_none$00 = BocInput;\nboc_cell$01 cell:^Cell = BocInput;\nboc_raw$10 raw:^SnakeBytes = BocInput;\nshare_v1#01 compressed:Bool schema:^SnakeBytes boc:BocInput decode_as:(Maybe ^SnakeBytes) = SharePayload;",
+    "boc": "te6ccgEBAwEAJQACAwEoAQIAMzAXyB2YWx1ZTp1aW50OCA9IEV4YW1wbGU7QAAIq",
+    "kind": "SharePayload",
+    "documentation": "https://github.com/ilyar/sample-tlb/blob/main/src/share-format.ts",
+    "documentationTitle": "View the TL-B Share implementation on GitHub"
   }
 ]

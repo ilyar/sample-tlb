@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-
 import { test, expect } from '@playwright/test';
 
 import { MainPage, testData } from './app';
@@ -13,7 +11,7 @@ test.describe('UI Functionality E2E Tests', () => {
     });
 
     test('opens documentation samples with their schema, source and BoC', async ({ page }) => {
-        const picker = page.getByRole('combobox', { name: 'Documentation example' });
+        const picker = page.getByRole('combobox', { name: 'Sample schemas' });
         const source = page.locator('#sample-source');
         await expect(picker).toHaveValue('');
         await expect(mainPage.schemaField).toHaveText(
@@ -242,8 +240,15 @@ test('reads a share envelope pasted into BoC using the documented schema', async
     await page.getByRole('button', { name: 'Share' }).click();
     await expect(page).toHaveURL(/#tlb=[A-Za-z0-9_-]+$/);
     const payload = new URL(page.url()).hash.slice('#tlb='.length);
-    const schema = readFileSync('README.md', 'utf8').split('```tlb\n')[1].split('```')[0];
-    await page.locator('#schema').fill(schema);
+    const picker = page.getByRole('combobox', { name: 'Sample schemas' });
+    await expect(picker.locator('optgroup[label="Usecase"] option')).toHaveText('TL-B Share');
+    await picker.selectOption({ label: 'TL-B Share' });
+    await expect(page).toHaveURL(/#tlb-share$/);
+    await expect(page.locator('#data')).toContainText('"kind": "SharePayload"');
+    await expect(page.locator('#sample-source')).toHaveAttribute(
+        'href',
+        'https://github.com/ilyar/sample-tlb/blob/main/src/share-format.ts',
+    );
     await page.locator('#boc').fill(payload);
     const selector = page.locator('#root-type');
     if (await selector.isVisible()) await selector.selectOption({ label: 'SharePayload' });

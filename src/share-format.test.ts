@@ -1,10 +1,10 @@
-import { readFileSync } from 'node:fs';
 import { deflateRawSync } from 'node:zlib';
 
 import { beginCell, Cell } from '@ton/core';
 import { runtimeBy } from '@ton-community/tlb-runtime';
 
-import { decodeShare, encodeShare, parseShareHash } from './share-format';
+import samples from './samples.json';
+import { decodeShare, encodeShare, parseShareHash, shareSchema } from './share-format';
 
 const dataCell = beginCell().storeUint(1, 1).endCell();
 const boc = dataCell.toBoc().toString('base64');
@@ -103,7 +103,14 @@ test('round-trips multi-chunk UTF-8 and Decode as without CompressionStream', as
 });
 
 test('the documented SharePayload schema reads the outer BoC with tlb-runtime', async () => {
-    const schema = readFileSync('README.md', 'utf8').split('```tlb\n')[1].split('```')[0];
+    const sample = samples.find((entry) => entry.id === 'tlb-share')!;
+    expect(sample.schema).toBe(shareSchema);
+    const schema = sample.schema;
+    const legacyHash = Buffer.from(sample.boc, 'base64').toString('base64url');
+    const decoded = await decodeShare(legacyHash);
+    expect(decoded.schema).toBe('_ value:uint8 = Example;');
+    expect(Cell.fromBase64(decoded.boc).beginParse().loadUint(8)).toBe(42);
+    expect(await encodeShare(decoded)).toBe(legacyHash);
     const encoded = await encodeShare({ schema: 'abc', boc, decodeAs: 'Example' });
     const cell = Cell.fromBoc(Buffer.from(encoded, 'base64url'))[0];
     expect(runtimeBy(schema).decodeCell(cell, { rootType: 'SharePayload' })).toMatchObject({

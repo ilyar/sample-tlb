@@ -12,24 +12,11 @@ The JSON editor represents a cell as `{"$cell":"<base64 BoC>"}`, a raw bit strin
 
 **Share** copies a `#tlb=<base64url>` link with the schema, BoC and selected **Decode as** type. A single-root BoC reopens in standard Base64. Empty input stays empty, and incomplete or multi-root input keeps its original text. Older `#schema=...&boc=...` links and documentation sample links still open.
 
-To inspect a share link, paste the value after `#tlb=` into **BoC** and use this schema:
-
-```tlb
-bool_false$0 = Bool;
-bool_true$1 = Bool;
-nothing$0 {X:Type} = Maybe X;
-just$1 {X:Type} value:X = Maybe X;
-
-snake_bytes#_ len:(## 10) data:(bits len) next:(Maybe ^SnakeBytes) = SnakeBytes;
-boc_none$00 = BocInput;
-boc_cell$01 cell:^Cell = BocInput;
-boc_raw$10 raw:^SnakeBytes = BocInput;
-share_v1#01 compressed:Bool schema:^SnakeBytes boc:BocInput decode_as:(Maybe ^SnakeBytes) = SharePayload;
-```
+Share uses TL-B Runtime to encode and decode the envelope. Open [Sample schemas → Usecase → TL-B Share](https://ilyar.github.io/sample-tlb/#tlb-share) for the schema, a prepared cell and the implementation. To inspect another share link, paste the value after `#tlb=` into **BoC**.
 
 Each snake holds up to 2048 chunks of 126 bytes. The schema contains UTF-8 bytes, compressed with raw DEFLATE only when that saves space. The decompressed schema limit is 1 MiB.
 
-## Documentation samples
+## Sample schemas
 
 Edit [src/samples.json](src/samples.json) and rebuild to change the picker. Each entry requires `title`, `schema`, and `boc` (base64 or hex). Optional fields are `documentation` for a section URL, `documentationTitle` for its link text (defaults to “Open &lt;sample title&gt; in TON Docs”), `group` for a menu heading, and `kind` to select the intended decoded constructor when the sample is ambiguous. Generic examples include a concrete root in their schema.
 
