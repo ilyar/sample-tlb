@@ -11,6 +11,7 @@ interface Sample {
     group?: string;
     kind?: string;
     documentation?: string;
+    documentationTitle?: string;
 }
 
 const samples: Sample[] = catalog;
@@ -98,8 +99,13 @@ export class App {
         const boc = shared ? params.get('boc')! : (sample?.boc ?? defaultBoc);
         this.samplePicker.value = sample ? String(index) : '';
         this.sampleSource.hidden = !sample?.documentation;
-        if (sample?.documentation) this.sampleSource.href = sample.documentation;
-        else this.sampleSource.removeAttribute('href');
+        if (sample?.documentation) {
+            this.sampleSource.href = sample.documentation;
+            this.sampleSource.textContent = sample.documentationTitle?.trim() || `Open ${sample.title} in TON Docs`;
+        } else {
+            this.sampleSource.removeAttribute('href');
+            this.sampleSource.textContent = '';
+        }
 
         this.focus = Focus.boc;
         this.processor.updateBoc('');

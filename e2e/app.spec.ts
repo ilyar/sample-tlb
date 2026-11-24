@@ -22,9 +22,11 @@ test.describe('UI Functionality E2E Tests', () => {
         await expect(mainPage.schemaField).toHaveValue(/nothing\$0/);
         await expect(mainPage.bocField).not.toHaveValue('');
         await expect(mainPage.dataField).toHaveValue(/Maybe_just/);
+        await expect(source).toHaveAccessibleName('Open Maybe in TON Docs');
         await expect(source).toHaveAttribute('href', /simple-examples#maybe$/);
         await picker.selectOption({ label: 'VmTuple' });
         await expect(mainPage.dataField).toHaveValue(/VmStackValue_vm_stk_tuple/);
+        await expect(source).toHaveAccessibleName('Open VmTuple in TON Docs');
         await expect(source).toHaveAttribute('href', /#vmtuple$/);
         await mainPage.schemaField.fill('_ x:# = Custom;');
         await expect(picker).toHaveValue('');
