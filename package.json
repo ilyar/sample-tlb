@@ -1,8 +1,8 @@
 {
   "name": "sample-tlb",
-  "version": "1.0.0-alpa.1",
+  "version": "1.0.0",
   "description": "TL-B Runtime sample",
-  "author": "TonTech",
+  "author": "Ilyar",
   "license": "MIT",
   "type": "module",
   "prettier": "@ton/toolchain/prettier",
