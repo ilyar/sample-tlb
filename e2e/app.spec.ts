@@ -190,3 +190,41 @@ test.describe('UI Functionality E2E Tests', () => {
         await expect(mainPage.dataField).toBeVisible();
     });
 });
+
+test('restores linked samples and navigates their history', async ({ page }) => {
+    await page.goto('./#dns');
+    const selected = page.locator('#docs-sample option:checked');
+    await expect(selected).toHaveText('DNS record set');
+    await page.locator('#docs-sample').selectOption({ label: 'Maybe' });
+    await expect(page).toHaveURL(/#maybe$/);
+    await page.goBack();
+    await expect(selected).toHaveText('DNS record set');
+    await page.goForward();
+    await expect(page.locator('#data')).toHaveValue(/Maybe_just/);
+});
+
+test('shares only the current schema and BoC', async ({ page }) => {
+    await page.goto('./');
+    await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { value: undefined }));
+    const schema = await page.locator('#schema').inputValue();
+    const boc = await page.locator('#boc').inputValue();
+    const data = await page.locator('#data').inputValue();
+    await page.getByRole('button', { name: 'Share' }).click();
+    const link = await page.getByRole('textbox', { name: 'Link to copy' }).inputValue();
+    const params = new URLSearchParams(new URL(link).hash.slice(1));
+    expect([...params.entries()]).toEqual([
+        ['schema', schema],
+        ['boc', boc],
+    ]);
+    await page.goto(link);
+    await expect(page.locator('#data')).toHaveValue(data);
+});
+
+test('centers the footer signature on mobile and desktop', async ({ page }) => {
+    await page.goto('./');
+    for (const width of [375, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        const signature = await page.locator('.ilyar-signature').boundingBox();
+        expect(Math.abs(signature!.x + signature!.width / 2 - width / 2)).toBeLessThan(1);
+    }
+});

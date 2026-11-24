@@ -1,9 +1,10 @@
 import { Result } from '@ton-community/tlb-runtime';
 
 import catalog from './samples.json';
-import { CellProcessor, Focus, TLBData } from './cell-processor';
+import { CellProcessor, defaultBoc, defaultSchema, Focus, TLBData } from './cell-processor';
 
 interface Sample {
+    id?: string;
     title: string;
     schema: string;
     boc: string;
@@ -13,6 +14,16 @@ interface Sample {
 }
 
 const samples: Sample[] = catalog;
+
+function sampleId(sample: Sample): string {
+    return (
+        sample.id ??
+        sample.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/-$/, '')
+    );
+}
 
 export class App {
     private readonly samplePicker = document.querySelector<HTMLSelectElement>('#docs-sample')!;
@@ -34,8 +45,8 @@ export class App {
         this.initializeUI();
         this.setupSamplePicker();
         this.setupEventListeners();
-        this.updateFieldsFromCore();
-        this.refreshRootInput();
+        this.openFragment();
+        window.addEventListener('hashchange', () => this.openFragment());
     }
 
     private initializeUI() {
@@ -66,28 +77,84 @@ export class App {
         }
         this.samplePicker.addEventListener('change', () => {
             const sample = samples[Number(this.samplePicker.value)];
-            this.focus = Focus.boc;
-            this.processor.updateBoc('');
-            for (const field of ['schema', 'boc', 'data']) this.hideFieldError(field);
-            this.sampleSource.hidden = !sample.documentation;
-            if (sample.documentation) this.sampleSource.href = sample.documentation;
-            else this.sampleSource.removeAttribute('href');
-            const schema = this.processor.updateSchema(sample.schema);
-            this.handleResult(schema, 'schema');
-            if (!schema.success) return;
-            this.handleResult(this.processor.updateBoc(sample.boc), 'boc');
-            this.refreshRootInput();
-            if (sample.kind && this.processor.choices.length > 1) {
-                const index = this.processor.choices.findIndex((choice) => choice.kind === sample.kind && choice.value);
-                if (index >= 0) {
-                    this.rootSelect.value = String(index);
-                    this.showChoice();
-                }
-            }
+            window.history.pushState(null, '', '#' + sampleId(sample));
+            this.openFragment();
         });
     }
 
+    private clearShareFeedback() {
+        document.querySelector<HTMLElement>('#share-status')!.textContent = '';
+        document.querySelector<HTMLInputElement>('#share-link')!.hidden = true;
+    }
+
+    private openFragment() {
+        this.clearShareFeedback();
+        const fragment = window.location.hash.slice(1);
+        const index = samples.findIndex((entry) => sampleId(entry) === fragment);
+        const sample = samples[index];
+        const params = new URLSearchParams(fragment);
+        const shared = params.has('schema') && params.has('boc');
+        const schema = shared ? params.get('schema')! : (sample?.schema ?? defaultSchema);
+        const boc = shared ? params.get('boc')! : (sample?.boc ?? defaultBoc);
+        this.samplePicker.value = sample ? String(index) : '';
+        this.sampleSource.hidden = !sample?.documentation;
+        if (sample?.documentation) this.sampleSource.href = sample.documentation;
+        else this.sampleSource.removeAttribute('href');
+
+        this.focus = Focus.boc;
+        this.processor.updateBoc('');
+        for (const field of ['schema', 'boc', 'data']) this.hideFieldError(field);
+        const result = this.processor.updateSchema(schema);
+        this.handleResult(result, 'schema');
+        if (result.success) {
+            const decoded = this.processor.updateBoc(boc);
+            this.handleResult(decoded, 'boc');
+            if (!decoded.success) this.dataField!.value = '';
+        } else {
+            this.dataField!.value = '';
+        }
+        this.schemaField!.value = schema;
+        this.bocField!.value = boc;
+        this.refreshRootInput();
+        if (sample?.kind && this.processor.choices.length > 1) {
+            const choice = this.processor.choices.findIndex((entry) => entry.kind === sample.kind && entry.value);
+            if (choice >= 0) {
+                this.rootSelect.value = String(choice);
+                this.showChoice();
+            }
+        }
+    }
+
+    private async share() {
+        const url = new URL(window.location.href);
+        url.search = '';
+        url.hash = new URLSearchParams({ schema: this.schemaField!.value, boc: this.bocField!.value }).toString();
+        const status = document.querySelector<HTMLElement>('#share-status')!;
+        try {
+            await window.navigator.clipboard.writeText(url.href);
+            status.textContent = 'Link copied';
+        } catch {
+            const link = document.querySelector<HTMLInputElement>('#share-link')!;
+            link.value = url.href;
+            link.hidden = false;
+            link.select();
+            status.textContent = 'Copy this link';
+        }
+    }
+
     private setupEventListeners() {
+        document.querySelector('#share')!.addEventListener('click', () => this.share());
+        for (const field of [this.schemaField, this.bocField, this.dataField]) {
+            field?.addEventListener('input', () => {
+                this.clearShareFeedback();
+                if (window.location.hash) {
+                    window.history.pushState(null, '', window.location.pathname + window.location.search);
+                    this.samplePicker.value = '';
+                    this.sampleSource.hidden = true;
+                    this.sampleSource.removeAttribute('href');
+                }
+            });
+        }
         if (this.schemaField) {
             this.schemaField.addEventListener('input', (e) => {
                 const target = e.target as HTMLTextAreaElement;
@@ -206,10 +273,6 @@ export class App {
         } else {
             this.showFieldError(result.error.message, field);
         }
-    }
-
-    private updateFieldsFromCore() {
-        this.updateFieldsFromData(this.processor.state);
     }
 
     private updateFieldsFromData(data: TLBData) {

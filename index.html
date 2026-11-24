@@ -29,8 +29,11 @@
             <div class="field-group boc-field">
               <div class="label-row">
                 <label for="boc">BoC</label>
+                <button type="button" id="share" title="Copy a link to this schema and BoC">Share</button>
                 <span id="boc-error" class="field-error" style="display: none;"></span>
               </div>
+              <span id="share-status" role="status"></span>
+              <input id="share-link" aria-label="Link to copy" readonly hidden>
               <textarea name="boc" id="boc" placeholder="BoC in base64 or hex"></textarea>
               <div id="root-control" hidden>
                 <label for="root-type">Decode as</label>

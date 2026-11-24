@@ -12,6 +12,9 @@ module.exports = [
         files: ['src/**/*.ts'],
         languageOptions: {
             globals: {
+                window: 'readonly',
+                URL: 'readonly',
+                URLSearchParams: 'readonly',
                 document: 'readonly',
                 HTMLTextAreaElement: 'readonly',
                 HTMLSpanElement: 'readonly',
