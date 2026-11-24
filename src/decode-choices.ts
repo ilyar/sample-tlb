@@ -57,6 +57,7 @@ function leavesTrailingData(encoded: Cell, wire: Cell): boolean {
 export function decodeChoices(runtime: TLBRuntime, cell: Cell): DecodeChoice[] {
     const choices: DecodeChoice[] = [];
     const pending: DecodeChoice[] = [];
+    const tagged: DecodeChoice[] = [];
     for (const type of runtime.getTypes().values()) {
         const slice = cell.beginParse();
         const constructors = type.constructors.filter(
@@ -130,6 +131,16 @@ export function decodeChoices(runtime: TLBRuntime, cell: Cell): DecodeChoice[] {
                 continue;
             }
             choices.push(choice);
+            if (c.tag.bitLen) tagged.push(choice);
+        }
+    }
+    // A tag can belong to a nested field of a tagless root (e.g. the Unary sample).
+    if (choices.length > 1 && tagged.length === 1 && tagged[0].value) {
+        try {
+            const inferred = runtime.decodeCell(cell);
+            if (inferred.kind === tagged[0].kind) return tagged;
+        } catch {
+            // Keep the validated choices if the runtime cannot infer the root.
         }
     }
     return choices.length ? choices : pending;

@@ -33,6 +33,16 @@ test.describe('UI Functionality E2E Tests', () => {
         await expect(source).toBeHidden();
     });
 
+    test('decodes a shared BoC by its tag when a tagless fallback also matches', async ({ page }) => {
+        const hash = new URLSearchParams({
+            schema: 'tagged_off$0 = Tagged;\n_ value:uint1 = Fallback;\ntagged_on$1 = Tagged;',
+            boc: 'te6cckEBAQEAAwAAAcCO6ba2',
+        });
+        await page.goto('/#' + hash);
+        await expect(mainPage.dataField).toHaveText(/"kind": "Tagged_tagged_on"/);
+        await expect(page.locator('#root-type')).toBeHidden();
+    });
+
     test('asks for a type only when the BoC matches multiple types', async ({ page }) => {
         const root = page.locator('#root-type');
         await expect(root).toBeHidden();
