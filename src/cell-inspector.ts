@@ -61,7 +61,8 @@ export class CellInspector {
             const row = document.createElement('li');
             row.tabIndex = -1;
             const label = document.createElement('strong');
-            label.textContent = `#${index}${rootKeys.has(key) ? ' · Root' : ''}`;
+            const isRoot = rootKeys.has(key);
+            label.textContent = `#${index}${isRoot ? ' · Root' : ''}`;
             const size = document.createElement('span');
             size.textContent = count(cell.bits.length, 'bit');
             const hex = document.createElement('code');
@@ -83,6 +84,16 @@ export class CellInspector {
                     refs.append(link);
                 }
                 row.append(refs);
+            }
+            if (isRoot) {
+                const hash = document.createElement('details');
+                hash.className = 'cell-hash';
+                const summary = document.createElement('summary');
+                summary.textContent = `Hash · ${key.slice(0, 8)}…${key.slice(-8)}`;
+                const full = document.createElement('code');
+                full.textContent = key;
+                hash.append(summary, full);
+                row.append(hash);
             }
             rows.append(row);
         }

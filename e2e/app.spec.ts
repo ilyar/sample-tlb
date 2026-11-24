@@ -271,6 +271,14 @@ test('links TL-B and JSON colors and inspects independent BoC structure', async 
     await page.getByText('Inspect cells', { exact: true }).click();
     await expect(page.locator('#cell-list li')).toHaveCount(3);
     await expect(page.locator('#cell-list li').first()).toContainText('Refs → #1');
+    const hash = page.locator('#cell-list .cell-hash');
+    await expect(hash).toHaveCount(1);
+    await expect(hash.locator('code')).toBeHidden();
+    await expect(hash.locator('summary')).toHaveText('Hash · 9f6c7a4f…6a900e58');
+    await hash.locator('summary').focus();
+    await page.keyboard.press('Enter');
+    await expect(hash.locator('code')).toBeVisible();
+    await expect(hash.locator('code')).toHaveText('9f6c7a4f11d61a0518b28320dfadeaca270c5381aa3388232bc014286a900e58');
     await page.locator('#schema').fill('broken schema');
     await expect(page.locator('#schema-error')).not.toBeEmpty();
     await expect(page.locator('#cell-list li')).toHaveCount(3);
@@ -315,6 +323,7 @@ test('inspects shared references and BoCs with multiple roots', async ({ page })
     await expect(page.locator('#cell-list li').nth(1)).toBeFocused();
     await boc.fill('b5ee9c7201010202000600010002aa0002bb');
     await expect(page.locator('#cell-stats')).toHaveText('2 cells · 2 roots');
-    await expect(page.locator('#cell-list code')).toHaveText(['x{AA}', 'x{BB}']);
+    await expect(page.locator('#cell-list li > code')).toHaveText(['x{AA}', 'x{BB}']);
+    await expect(page.locator('#cell-list .cell-hash')).toHaveCount(2);
     await expect(page.locator('#boc-error')).toContainText('single root');
 });
