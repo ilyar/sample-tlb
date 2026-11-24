@@ -1,10 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
-  <title id="title">TL-B Runtime</title>
-  <desc id="desc">A cell holding the bits 0 and 1 branches into two referenced cells.</desc>
-  <rect width="64" height="64" rx="13" fill="#122b38"/>
-  <path d="M32 28v9M15 46v-9h34v9" fill="none" stroke="#79dfcf" stroke-width="4" stroke-linejoin="round"/>
-  <path d="M14 8h30l6 6v14H14z" fill="#eff8ed"/>
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="TL-B Runtime" viewBox="0 0 64 64">
+  <title>TL-B Runtime</title>
+  <desc>
+    A cell holding the bits 0 and 1 branches into two referenced cells.
+  </desc>
+  <rect width="64" height="64" fill="#122b38" rx="13"/>
+  <path fill="none" stroke="#79dfcf" stroke-linejoin="round" stroke-width="4" d="M32 28v9m-17 9v-9h34v9"/>
+  <path fill="#eff8ed" d="M14 8h30l6 6v14H14z"/>
   <path fill="#122b38" fill-rule="evenodd" d="M21 12h11v12H21zm4 3v6h3v-6z"/>
-  <path d="M36 14l4-2h3v12h-4v-8l-3 1z" fill="#122b38"/>
-  <path d="M7 44h12l4 4v8H7zm34 0h12l4 4v8H41z" fill="#79dfcf"/>
+  <path fill="#122b38" d="m36 14 4-2h3v12h-4v-8l-3 1z"/>
+  <path fill="#79dfcf" d="M7 44h12l4 4v8H7zm34 0h12l4 4v8H41z"/>
 </svg>
