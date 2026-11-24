@@ -17,6 +17,8 @@ module.exports = [
                 HTMLSpanElement: 'readonly',
                 HTMLInputElement: 'readonly',
                 HTMLSelectElement: 'readonly',
+                HTMLAnchorElement: 'readonly',
+                HTMLOptGroupElement: 'readonly',
                 Option: 'readonly',
                 HTMLButtonElement: 'readonly',
                 HTMLElement: 'readonly',

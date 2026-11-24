@@ -1,0 +1,170 @@
+[
+  {
+    "group": "Syntax and semantics",
+    "title": "TL-B Scheme",
+    "schema": "_ {x:#} my_val:(## x) = A x;\n_ value:(A 8) = Example;",
+    "boc": "te6cckEBAQEAAwAAAio1wYMK",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/syntax-and-semantics#tl-b-scheme"
+  },
+  {
+    "group": "Syntax and semantics",
+    "title": "Comments",
+    "schema": "flag$1 value:uint8 = Flag;\n// The constructor tag is one bit.",
+    "boc": "te6cckEBAQEABAAAA4PAHocevQ==",
+    "kind": "Flag",
+    "documentation": "https://docs.ton.org/foundations/tlb/syntax-and-semantics#comments"
+  },
+  {
+    "group": "Syntax and semantics",
+    "title": "Field definitions",
+    "schema": "_ val:(## 32) = Example;",
+    "boc": "te6cckEBAQEABgAACAAAACoFpvBE",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/syntax-and-semantics#field-definitions"
+  },
+  {
+    "group": "Syntax and semantics",
+    "title": "Simple",
+    "schema": "bool_false$0 = Bool;\nbool_true$1 = Bool;\nstorage_used$_ cells:(VarUInteger 7) bits:(VarUInteger 7) = StorageUsed;\ntr_phase_storage$_ storage_fees_collected:Grams \n  storage_fees_due:(Maybe Grams)\n  status_change:AccStatusChange\n  = TrStoragePhase;\nacst_unchanged$0 = AccStatusChange;\nacst_frozen$10 = AccStatusChange;\nacst_deleted$11 = AccStatusChange;\ntr_phase_compute_skipped$0 reason:ComputeSkipReason\n  = TrComputePhase;\ntr_phase_compute_vm$1 success:Bool msg_state_used:Bool \n  account_activated:Bool gas_fees:Grams\n  ^[ gas_used:(VarUInteger 7)\n  gas_limit:(VarUInteger 7) gas_credit:(Maybe (VarUInteger 3))\n  mode:int8 exit_code:int32 exit_arg:(Maybe int32)\n  vm_steps:uint32\n  vm_init_state_hash:bits256 vm_final_state_hash:bits256 ]\n  = TrComputePhase;\ncskip_no_state$00 = ComputeSkipReason;\ncskip_bad_state$01 = ComputeSkipReason;\ncskip_no_gas$10 = ComputeSkipReason;\ncskip_suspended$110 = ComputeSkipReason;\ntr_phase_action$_ success:Bool valid:Bool no_funds:Bool\n  status_change:AccStatusChange\n  total_fwd_fees:(Maybe Grams) total_action_fees:(Maybe Grams)\n  result_code:int32 result_arg:(Maybe int32) tot_actions:uint16\n  spec_actions:uint16 skipped_actions:uint16 msgs_created:uint16 \n  action_list_hash:bits256 tot_msg_size:StorageUsed\n  = TrActionPhase;\ntrans_tick_tock$001 is_tock:Bool storage_ph:TrStoragePhase\n  compute_ph:TrComputePhase action:(Maybe ^TrActionPhase)\n  aborted:Bool destroyed:Bool = TransactionDescr;\nnothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\nvar_uint$_ {n:#} len:(#< n) value:(uint (len * 8)) = VarUInteger n;\nnanograms$_ amount:(VarUInteger 16) = Grams;",
+    "boc": "te6cckEBAQEABQAABjEqAGQNIrQ=",
+    "kind": "TransactionDescr",
+    "documentation": "https://docs.ton.org/foundations/tlb/syntax-and-semantics#simple"
+  },
+  {
+    "group": "Syntax and semantics",
+    "title": "Constructors",
+    "schema": "vm_stk_int#0201_ value:int257 = VmStackValue;",
+    "boc": "te6cckEBAQEAJAAARAIB//////////////////////////////////////////mvIS+u",
+    "kind": "VmStackValue",
+    "documentation": "https://docs.ton.org/foundations/tlb/syntax-and-semantics#constructors"
+  },
+  {
+    "group": "Syntax and semantics",
+    "title": "Contained complex expressions",
+    "schema": "_ a:(## 32) ^[ b:(## 32) c:(## 32) d:(## 32) ] = A;",
+    "boc": "te6cckEBAgEAFQABCAAAAAEBABgAAAACAAAAAwAAAARka2FO",
+    "kind": "A",
+    "documentation": "https://docs.ton.org/foundations/tlb/syntax-and-semantics#contained-complex-expressions"
+  },
+  {
+    "group": "Syntax and semantics",
+    "title": "Parameterized",
+    "schema": "_ {input:#} c:(## input) = B input;\n_ a:(## 8) c_in_b:(B a) = A;",
+    "boc": "te6cckEBAQEABAAAAwWc1jl0Mw==",
+    "kind": "A",
+    "documentation": "https://docs.ton.org/foundations/tlb/syntax-and-semantics#parameterized"
+  },
+  {
+    "group": "Syntax and semantics",
+    "title": "Implicit fields and the negate operator (~)",
+    "schema": "_ a:(## 32) { b:# } { ~b = a + 100 } = Calculated;",
+    "boc": "te6cckEBAQEABgAACAAAAAIUcJTu",
+    "kind": "Calculated",
+    "documentation": "https://docs.ton.org/foundations/tlb/syntax-and-semantics#implicit-fields-and-the-negate-operator-"
+  },
+  {
+    "group": "Syntax and semantics",
+    "title": "Negate operator (~) in type definition",
+    "schema": "_ {m:#} n:(## m) = Define ~n m;\n_ {n_from_define:#} defined_val:(Define ~n_from_define 8) real_value:(## n_from_define) = Example;",
+    "boc": "te6cckEBAQEABAAAAwWsZ3CXAw==",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/syntax-and-semantics#negate-operator--in-type-definition"
+  },
+  {
+    "group": "Simple examples",
+    "title": "Maybe",
+    "schema": "nothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\n_ v:(Maybe uint8) = Example;",
+    "boc": "te6cckEBAQEABAAAA5VA1RziaQ==",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/simple-examples#maybe"
+  },
+  {
+    "group": "Simple examples",
+    "title": "Either",
+    "schema": "left$0 {X:Type} {Y:Type} value:X = Either X Y;\nright$1 {X:Type} {Y:Type} value:Y = Either X Y;\n_ v:(Either uint8 int16) = Example;",
+    "boc": "te6cckEBAQEABQAABf/8wJ8B8eI=",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/simple-examples#either"
+  },
+  {
+    "group": "Simple examples",
+    "title": "Both",
+    "schema": "pair$_ {X:Type} {Y:Type} first:X second:Y = Both X Y;\n_ pair:(Both uint5 int8) = Example;",
+    "boc": "te6cckEBAQEABAAAA6/MqAlIXA==",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/simple-examples#both"
+  },
+  {
+    "group": "Simple examples",
+    "title": "VarUInteger n",
+    "schema": "var_uint$_ {n:#} len:(#< n) value:(uint (len * 8)) = VarUInteger n;\n_ value:(VarUInteger 16) = Example;",
+    "boc": "te6cckEBAQEABQAABSa7+As5QXw=",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/simple-examples#varuinteger-n"
+  },
+  {
+    "group": "Complex and non-trivial examples",
+    "title": "Unary",
+    "schema": "unary_zero$0 = Unary ~0;\nunary_succ$1 {n:#} x:(Unary ~n) = Unary ~(n + 1);\n_ {n:#} value:(Unary ~n) = Example;",
+    "boc": "te6cckEBAQEAAwAAAdDhLuim",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/complex-and-non-trivial-examples#unary"
+  },
+  {
+    "group": "Complex and non-trivial examples",
+    "title": "Hashmap",
+    "schema": "bit$_ (## 1) = Bit;\nunary_zero$0 = Unary ~0;\nunary_succ$1 {n:#} x:(Unary ~n) = Unary ~(n + 1);\nhml_short$0 {m:#} {n:#} len:(Unary ~n) {n <= m} s:(n * Bit) = HmLabel ~n m;\nhml_long$10 {m:#} n:(#<= m) s:(n * Bit) = HmLabel ~n m;\nhml_same$11 {m:#} v:Bit n:(#<= m) = HmLabel ~n m;\nhm_edge#_ {n:#} {X:Type} {l:#} {m:#} label:(HmLabel ~l n) {n = (~m) + l} node:(HashmapNode m X) = Hashmap n X;\nhmn_leaf#_ {X:Type} value:X = HashmapNode 0 X;\nhmn_fork#_ {n:#} {X:Type} left:^(Hashmap n X) right:^(Hashmap n X) = HashmapNode (n + 1) X;\nhme_empty$0 {n:#} {X:Type} = HashmapE n X;\nhme_root$1 {n:#} {X:Type} root:^(Hashmap n X) = HashmapE n X;\n_ v:(HashmapE 8 uint16) = Example;",
+    "boc": "te6cckEBBgEAHwABAcABAgEgAgUCAWIDBAAHoIGEwAAHoIA3wAAF3AwmuC0wog==",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/complex-and-non-trivial-examples#hashmap"
+  },
+  {
+    "group": "Complex and non-trivial examples",
+    "title": "Hashmap parsing example",
+    "schema": "bit$_ (## 1) = Bit;\nunary_zero$0 = Unary ~0;\nunary_succ$1 {n:#} x:(Unary ~n) = Unary ~(n + 1);\nhml_short$0 {m:#} {n:#} len:(Unary ~n) {n <= m} s:(n * Bit) = HmLabel ~n m;\nhml_long$10 {m:#} n:(#<= m) s:(n * Bit) = HmLabel ~n m;\nhml_same$11 {m:#} v:Bit n:(#<= m) = HmLabel ~n m;\nhm_edge#_ {n:#} {X:Type} {l:#} {m:#} label:(HmLabel ~l n) {n = (~m) + l} node:(HashmapNode m X) = Hashmap n X;\nhmn_leaf#_ {X:Type} value:X = HashmapNode 0 X;\nhmn_fork#_ {n:#} {X:Type} left:^(Hashmap n X) right:^(Hashmap n X) = HashmapNode (n + 1) X;\nhme_empty$0 {n:#} {X:Type} = HashmapE n X;\nhme_root$1 {n:#} {X:Type} root:^(Hashmap n X) = HashmapE n X;\n_ v:(HashmapE 8 uint16) = Example;",
+    "boc": "te6cckEBBgEAIAABAcABAgEgAgUCAZEDBAAHoIGEwAAHoIA3wAAHuAAwmK+xi9k=",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/complex-and-non-trivial-examples#hashmap-parsing-example"
+  },
+  {
+    "group": "Complex and non-trivial examples",
+    "title": "HashmapAugE",
+    "schema": "bit$_ (## 1) = Bit;\nunary_zero$0 = Unary ~0;\nunary_succ$1 {n:#} x:(Unary ~n) = Unary ~(n + 1);\nhml_short$0 {m:#} {n:#} len:(Unary ~n) {n <= m} s:(n * Bit) = HmLabel ~n m;\nhml_long$10 {m:#} n:(#<= m) s:(n * Bit) = HmLabel ~n m;\nhml_same$11 {m:#} v:Bit n:(#<= m) = HmLabel ~n m;\nahm_edge#_ {n:#} {X:Type} {Y:Type} {l:#} {m:#} label:(HmLabel ~l n) {n = (~m) + l} node:(HashmapAugNode m X Y) = HashmapAug n X Y;\nahmn_leaf#_ {X:Type} {Y:Type} extra:Y value:X = HashmapAugNode 0 X Y;\nahmn_fork#_ {n:#} {X:Type} {Y:Type} left:^(HashmapAug n X Y) right:^(HashmapAug n X Y) extra:Y = HashmapAugNode (n + 1) X Y;\nahme_empty$0 {n:#} {X:Type} {Y:Type} extra:Y = HashmapAugE n X Y;\nahme_root$1 {n:#} {X:Type} {Y:Type} root:^(HashmapAug n X Y) extra:Y = HashmapAugE n X Y;\n_ v:(HashmapAugE 1 uint8 uint4) = Example;",
+    "boc": "te6cckEBAQEAAwAAATwrSZsI",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/complex-and-non-trivial-examples#hashmapauge"
+  },
+  {
+    "group": "Complex and non-trivial examples",
+    "title": "PfxHashmap",
+    "schema": "bit$_ (## 1) = Bit;\nunary_zero$0 = Unary ~0;\nunary_succ$1 {n:#} x:(Unary ~n) = Unary ~(n + 1);\nhml_short$0 {m:#} {n:#} len:(Unary ~n) {n <= m} s:(n * Bit) = HmLabel ~n m;\nhml_long$10 {m:#} n:(#<= m) s:(n * Bit) = HmLabel ~n m;\nhml_same$11 {m:#} v:Bit n:(#<= m) = HmLabel ~n m;\nphm_edge#_ {n:#} {X:Type} {l:#} {m:#} label:(HmLabel ~l n) \n           {n = (~m) + l} node:(PfxHashmapNode m X) \n           = PfxHashmap n X;\nphmn_leaf$0 {n:#} {X:Type} value:X = PfxHashmapNode n X;\nphmn_fork$1 {n:#} {X:Type} left:^(PfxHashmap n X) \n            right:^(PfxHashmap n X) = PfxHashmapNode (n + 1) X;\nphme_empty$0 {n:#} {X:Type} = PfxHashmapE n X;\nphme_root$1 {n:#} {X:Type} root:^(PfxHashmap n X) \n            = PfxHashmapE n X;\n_ v:(PfxHashmapE 1 uint8) = Example;",
+    "boc": "te6cckEBAgEACAABAcABAAMFUKCUdLo=",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/complex-and-non-trivial-examples#pfxhashmap"
+  },
+  {
+    "group": "Complex and non-trivial examples",
+    "title": "VarHashmap",
+    "schema": "bit$_ (## 1) = Bit;\nunary_zero$0 = Unary ~0;\nunary_succ$1 {n:#} x:(Unary ~n) = Unary ~(n + 1);\nhml_short$0 {m:#} {n:#} len:(Unary ~n) {n <= m} s:(n * Bit) = HmLabel ~n m;\nhml_long$10 {m:#} n:(#<= m) s:(n * Bit) = HmLabel ~n m;\nhml_same$11 {m:#} v:Bit n:(#<= m) = HmLabel ~n m;\nnothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\nvhm_edge#_ {n:#} {X:Type} {l:#} {m:#} label:(HmLabel ~l n) \n           {n = (~m) + l} node:(VarHashmapNode m X) \n           = VarHashmap n X;\nvhmn_leaf$00 {n:#} {X:Type} value:X = VarHashmapNode n X;\nvhmn_fork$01 {n:#} {X:Type} left:^(VarHashmap n X) \n             right:^(VarHashmap n X) value:(Maybe X) \n             = VarHashmapNode (n + 1) X;\nvhmn_cont$1 {n:#} {X:Type} branch:Bit child:^(VarHashmap n X) \n            value:X = VarHashmapNode (n + 1) X;\nvhme_empty$0 {n:#} {X:Type} = VarHashmapE n X;\nvhme_root$1 {n:#} {X:Type} root:^(VarHashmap n X) \n            = VarHashmapE n X;\n_ v:(VarHashmapE 1 uint8) = Example;",
+    "boc": "te6cckEBAgEACAABAcABAAMCqF9qrrk=",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/complex-and-non-trivial-examples#varhashmap"
+  },
+  {
+    "group": "Complex and non-trivial examples",
+    "title": "BinTree",
+    "schema": "bta_leaf$0 {X:Type} {Y:Type} extra:Y leaf:X = BinTreeAug X Y;\nbta_fork$1 {X:Type} {Y:Type} left:^(BinTreeAug X Y) \n           right:^(BinTreeAug X Y) extra:Y = BinTreeAug X Y;\n_ t:(BinTreeAug uint8 uint4) = Example;",
+    "boc": "te6cckEBAwEADQACAaQBAgADEDwAAxBMNgCFIA==",
+    "kind": "Example",
+    "documentation": "https://docs.ton.org/foundations/tlb/complex-and-non-trivial-examples#bintree"
+  },
+  {
+    "group": "Complex and non-trivial examples",
+    "title": "VmTuple",
+    "schema": "vm_stk_tinyint#01 value:int64 = VmStackValue;\nvm_stk_cell#03 cell:^Cell = VmStackValue;\nvm_tupref_nil$_ = VmTupleRef 0;\nvm_tupref_single$_ entry:^VmStackValue = VmTupleRef 1;\nvm_tupref_any$_ {n:#} ref:^(VmTuple (n + 2)) = VmTupleRef (n + 2);\nvm_tuple_nil$_ = VmTuple 0;\nvm_tuple_tcons$_ {n:#} head:(VmTupleRef n) tail:^VmStackValue = VmTuple (n + 1);\nvm_stk_tuple#07 len:(## 16) data:(VmTuple len) = VmStackValue;",
+    "boc": "te6cckEBBgEALAACBgcAAwEFAgACAwASAQAAAAAAAAAsAQIDBAAKALW9PrAAEgH//////////yC3MlU=",
+    "kind": "VmStackValue_vm_stk_tuple",
+    "documentation": "https://docs.ton.org/foundations/tlb/complex-and-non-trivial-examples#vmtuple"
+  }
+]

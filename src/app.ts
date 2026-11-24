@@ -1,8 +1,22 @@
 import { Result } from '@ton-community/tlb-runtime';
 
+import catalog from './samples.json';
 import { CellProcessor, Focus, TLBData } from './cell-processor';
 
+interface Sample {
+    title: string;
+    schema: string;
+    boc: string;
+    group?: string;
+    kind?: string;
+    documentation?: string;
+}
+
+const samples: Sample[] = catalog;
+
 export class App {
+    private readonly samplePicker = document.querySelector<HTMLSelectElement>('#docs-sample')!;
+    private readonly sampleSource = document.querySelector<HTMLAnchorElement>('#sample-source')!;
     private readonly processor: CellProcessor;
     private schemaField: HTMLTextAreaElement | null = null;
     private bocField: HTMLTextAreaElement | null = null;
@@ -18,6 +32,7 @@ export class App {
     constructor() {
         this.processor = CellProcessor.default;
         this.initializeUI();
+        this.setupSamplePicker();
         this.setupEventListeners();
         this.updateFieldsFromCore();
         this.refreshRootInput();
@@ -30,6 +45,46 @@ export class App {
         this.schemaErrorSpan = document.getElementById('schema-error');
         this.bocErrorSpan = document.getElementById('boc-error');
         this.dataErrorSpan = document.getElementById('data-error');
+    }
+
+    private setupSamplePicker() {
+        const groups = new Map<string, HTMLOptGroupElement>();
+        for (const [i, sample] of samples.entries()) {
+            const option = new Option(sample.title, String(i));
+            if (!sample.group) {
+                this.samplePicker.add(option);
+                continue;
+            }
+            let group = groups.get(sample.group);
+            if (!group) {
+                group = document.createElement('optgroup');
+                group.label = sample.group;
+                groups.set(sample.group, group);
+                this.samplePicker.append(group);
+            }
+            group.append(option);
+        }
+        this.samplePicker.addEventListener('change', () => {
+            const sample = samples[Number(this.samplePicker.value)];
+            this.focus = Focus.boc;
+            this.processor.updateBoc('');
+            for (const field of ['schema', 'boc', 'data']) this.hideFieldError(field);
+            this.sampleSource.hidden = !sample.documentation;
+            if (sample.documentation) this.sampleSource.href = sample.documentation;
+            else this.sampleSource.removeAttribute('href');
+            const schema = this.processor.updateSchema(sample.schema);
+            this.handleResult(schema, 'schema');
+            if (!schema.success) return;
+            this.handleResult(this.processor.updateBoc(sample.boc), 'boc');
+            this.refreshRootInput();
+            if (sample.kind && this.processor.choices.length > 1) {
+                const index = this.processor.choices.findIndex((choice) => choice.kind === sample.kind && choice.value);
+                if (index >= 0) {
+                    this.rootSelect.value = String(index);
+                    this.showChoice();
+                }
+            }
+        });
     }
 
     private setupEventListeners() {
@@ -110,6 +165,9 @@ export class App {
     private handleSchemaChange(newSchema: string) {
         if (this.isUpdating) return;
 
+        this.samplePicker.value = '';
+        this.sampleSource.hidden = true;
+        this.sampleSource.removeAttribute('href');
         const result = this.processor.updateSchema(newSchema, this.focus);
         this.refreshRootInput();
         this.hideFieldError('boc');

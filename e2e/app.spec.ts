@@ -10,6 +10,27 @@ test.describe('UI Functionality E2E Tests', () => {
         await mainPage.goto();
     });
 
+    test('opens documentation samples with their schema, source and BoC', async ({ page }) => {
+        const picker = page.getByRole('combobox', { name: 'Documentation example' });
+        const source = page.locator('#sample-source');
+        await expect(picker).toHaveValue('');
+        await expect(mainPage.schemaField).toHaveValue(
+            'message#_ len:(## 7) { len <= 127 } text:(bits (len * 8)) = Message;',
+        );
+        await expect(source).toBeHidden();
+        await picker.selectOption({ label: 'Maybe' });
+        await expect(mainPage.schemaField).toHaveValue(/nothing\$0/);
+        await expect(mainPage.bocField).not.toHaveValue('');
+        await expect(mainPage.dataField).toHaveValue(/Maybe_just/);
+        await expect(source).toHaveAttribute('href', /simple-examples#maybe$/);
+        await picker.selectOption({ label: 'VmTuple' });
+        await expect(mainPage.dataField).toHaveValue(/VmStackValue_vm_stk_tuple/);
+        await expect(source).toHaveAttribute('href', /#vmtuple$/);
+        await mainPage.schemaField.fill('_ x:# = Custom;');
+        await expect(picker).toHaveValue('');
+        await expect(source).toBeHidden();
+    });
+
     test('asks for a type only when the BoC matches multiple types', async ({ page }) => {
         const root = page.locator('#root-type');
         await expect(root).toBeHidden();
