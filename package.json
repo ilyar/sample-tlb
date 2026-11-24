@@ -19,8 +19,8 @@
     "test:e2e:install": "playwright install",
     "qa": "yarn lint && yarn test && yarn test:e2e",
     "dev": "vite",
-    "build": "tsc && vite build --mode production",
-    "release": "gh-pages --nojekyll --branch release --dist dist",
+    "build": "tsc && vite build --mode production && node scripts/render-preview.mjs",
+    "release": "gh workflow run release.yml --ref main",
     "preview": "vite preview"
   },
   "devDependencies": {
@@ -33,6 +33,7 @@
     "@lezer/highlight": "^1.2.5",
     "@lezer/lr": "^1.4.12",
     "@playwright/test": "^1.54.2",
+    "@resvg/resvg-js": "^2.6.2",
     "@ton-community/tlb-runtime": "file:vendor/tlb-runtime-ef997f3.tgz",
     "@ton/core": "^0.63.0",
     "@ton/toolchain": "the-ton-tech/toolchain#v1",
