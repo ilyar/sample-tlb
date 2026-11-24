@@ -26,7 +26,6 @@ describe('CellProcessor', () => {
 
     it('decodes a parameterized root and re-encodes edited raw bits', () => {
         const proc = CellProcessor.from('_ {n:#} v:(bits n) = Bits n; _ x:uint32 = Other;');
-        proc.updateRoot('Bits 3');
         const encoded = proc.updateData('{"kind":"Bits","n":3,"v":{"$bits":"B_"}}');
         expect(encoded.success).toBe(true);
         const decoded = proc.updateBoc((encoded as Success<TLBData>).value.boc);
@@ -35,24 +34,19 @@ describe('CellProcessor', () => {
             n: 3,
             v: { $bits: 'B_' },
         });
-        expect(proc.updateRoot('Bits -1').success).toBe(false);
     });
 
-    it('should update schema successfully with focus on BoC', () => {
-        const newSchema = '_ x:# = Foo;';
-        const actual = proc.updateSchema(newSchema, Focus.boc);
-        expect(actual.success).toBe(true);
-        expect((actual as Success<TLBData>).value.schema).toBe(newSchema);
-        expect((actual as Success<TLBData>).value.data).toEqual(
-            JSON.stringify(
-                {
-                    kind: 'Foo',
-                    x: 682150630,
-                },
-                null,
-                2,
-            ),
+    it('rejects partial matches inside references', () => {
+        const proc = CellProcessor.from(
+            '_ a:uint16 = Short; _ b:uint32 = Full; _ x:^Short = Wrong; _ y:^Full = Right;',
         );
+        const encoded = proc.updateData('{"kind":"Right","y":{"kind":"Full","b":42}}');
+        const decoded = proc.updateBoc((encoded as Success<TLBData>).value.boc);
+        expect(JSON.parse((decoded as Success<TLBData>).value.data).kind).toBe('Right');
+    });
+
+    it('rejects a match that leaves trailing bits in the cell', () => {
+        expect(proc.updateSchema('_ x:# = Foo;', Focus.boc).success).toBe(false);
     });
 
     it('should update schema successfully with focus on Data', () => {

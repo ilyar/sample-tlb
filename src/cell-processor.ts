@@ -1,6 +1,8 @@
 import { beginCell, BitString, Cell, Dictionary, ExternalAddress } from '@ton/core';
 import { TLBRuntime, Result, unwrap, replacer, blockSchema } from '@ton-community/tlb-runtime';
 
+import { DecodeChoice, decodeChoices, withArguments } from './decode-choices';
+
 export const defaultSchema = 'message#_ len:(## 7) { len <= 127 } text:(bits (len * 8)) = Message;';
 
 export const defaultBoc = 'te6cckEBAQEAFwAAKSioyuboQNrK5ubCzspA0txAxsrY2Whv0fw=';
@@ -60,7 +62,8 @@ function readValue(_key: string, value: unknown): unknown {
 export class CellProcessor {
     private bocFormat: DataFormat = DataFormat.base64;
     private boc: string = '';
-    private root = '';
+    choices: DecodeChoice[] = [];
+    private cell?: Cell;
     private data: string = '{}';
     private runtime: TLBRuntime = unwrap(TLBRuntime.from(''));
 
@@ -82,22 +85,6 @@ export class CellProcessor {
         };
     }
 
-    get rootInput() {
-        const types = [...this.runtime.getTypes().values()].filter((type) =>
-            type.constructors.some((constructor) => constructor.declaration),
-        );
-        if (types.length > 1) return { prefix: '', label: 'Decode as (optional)', placeholder: types[0].name };
-        const type = types[0];
-        if (
-            type?.constructors.some((constructor) =>
-                constructor.parameters.some((p) => p.variable.type === '#' && !p.variable.negated),
-            )
-        ) {
-            return { prefix: type.name, label: `Arguments for ${type.name} (optional)`, placeholder: 'e.g. 4' };
-        }
-        return undefined;
-    }
-
     static get default(): CellProcessor {
         return new CellProcessor(defaultSchema, defaultBoc);
     }
@@ -109,6 +96,7 @@ export class CellProcessor {
     }
 
     public updateSchema(newSchema: string, focus: Focus = Focus.boc): Result<TLBData> {
+        this.choices = [];
         if (!newSchema || newSchema.trim() === '') {
             return {
                 success: false,
@@ -130,7 +118,6 @@ export class CellProcessor {
             return result;
         }
         this.runtime = result.value;
-        this.root = '';
 
         if (focus === Focus.boc) {
             return this.updateBoc(this.boc);
@@ -139,12 +126,21 @@ export class CellProcessor {
         return this.updateData(this.data);
     }
 
-    public updateRoot(root: string): Result<TLBData> {
-        this.root = root.trim();
-        return this.updateBoc(this.boc);
+    public selectChoice(index: number, args: number[] = []): Result<TLBData> {
+        const choice = this.choices[index];
+        try {
+            if (!choice || !this.cell) throw new Error('Select a matching type');
+            const value = choice.value ?? withArguments(this.runtime, this.cell, choice, args);
+            this.data = JSON.stringify(value, displayValue, 2);
+            return { success: true, value: this.state };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error : new Error('Invalid arguments') };
+        }
     }
 
     public updateBoc(newBoc: string): Result<TLBData> {
+        this.choices = [];
+        this.cell = undefined;
         if (!newBoc || newBoc.trim() === '') {
             this.boc = '';
             this.data = '{}';
@@ -156,11 +152,11 @@ export class CellProcessor {
 
         this.boc = newBoc;
         try {
-            const [rootType, ...parameters] = this.root.split(/\s+/);
-            if (parameters.some((p) => !/^\d+$/.test(p))) throw new Error('Expected natural number arguments');
-            const options = rootType ? { rootType, args: parameters.map(Number) } : undefined;
-            const decoded = this.runtime.decodeCell(this.boc, options);
-            this.data = JSON.stringify(decoded, displayValue, 2);
+            this.cell = /^b5ee9c72/i.test(this.boc) ? Cell.fromHex(this.boc) : Cell.fromBase64(this.boc);
+            this.choices = decodeChoices(this.runtime, this.cell);
+            if (!this.choices.length) throw new Error('No type in the schema matches the complete cell');
+            if (this.choices.length === 1 && this.choices[0].value) return this.selectChoice(0);
+            this.data = '';
         } catch (error) {
             return {
                 success: false,
@@ -174,9 +170,20 @@ export class CellProcessor {
     }
 
     public updateData(newData: string): Result<TLBData> {
+        this.choices = [];
         this.data = newData.trim();
         try {
             const data = JSON.parse(this.data, readValue);
+            if (!data || typeof data.kind !== 'string' || !data.kind)
+                throw new Error('Data must include a kind from the schema');
+            const knownKind = [...this.runtime.getTypes().values()].some((type) =>
+                type.constructors.some(
+                    (c) =>
+                        c.declaration &&
+                        data.kind === (type.constructors.length === 1 ? type.name : type.name + '_' + c.name),
+                ),
+            );
+            if (!knownKind) throw new Error('Unknown kind in this schema: ' + data.kind);
             const encoded = this.runtime.encodeCell(data).toBoc();
             switch (this.bocFormat) {
                 case DataFormat.hex:

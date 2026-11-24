@@ -2,7 +2,7 @@
 
 The demo uses runtime `1.0.0-alpha.5` built from [commit 5cf275d](https://github.com/ilyar/tlb-runtime/commit/5cf275de742b33777ceb87ddbf4e0d5f41e8f3ca).
 
-A single root type is selected automatically. If it takes numeric arguments, enter just the numbers, for example `4`. With several types, use **Decode as** to enter a type and any arguments, or leave it empty for automatic selection.
+Paste a BoC to decode it against the schema. A unique match opens automatically. If several types fit the cell, choose one under **Decode as**. When a numeric argument is missing from the wire, the editor asks for that argument. To encode JSON, set its `kind` to the type or constructor name.
 
 The JSON editor represents a cell as `{"$cell":"<base64 BoC>"}`, a raw bit string as `{"$bits":"<TON hex>"}`, and an external address as `{"$external":[48,"5623048054"]}`. Dictionary properties are the decimal keys.
 

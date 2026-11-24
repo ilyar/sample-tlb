@@ -10,21 +10,30 @@ test.describe('UI Functionality E2E Tests', () => {
         await mainPage.goto();
     });
 
-    test('shows root controls only when the schema needs a choice or arguments', async ({ page }) => {
+    test('asks for a type only when the BoC matches multiple types', async ({ page }) => {
         const root = page.locator('#root-type');
         await expect(root).toBeHidden();
         await mainPage.bocField.fill('');
-        await mainPage.schemaField.fill('a$0 = Choice; b$1 = Choice;');
+        await mainPage.schemaField.fill('_ x:uint16 = Short; _ x:uint32 = A; _ y:uint32 = B;');
         await expect(root).toBeHidden();
-        await mainPage.schemaField.fill('_ {n:#} value:(bits n) = Payload n;');
-        await expect(root).toHaveAccessibleName('Arguments for Payload (optional)');
-        await root.fill('3');
-        await mainPage.schemaField.fill('_ x:uint16 = A; _ y:uint32 = B;');
-        await expect(root).toHaveAccessibleName('Decode as (optional)');
-        await expect(root).toHaveValue('');
-        await root.fill('B');
-        await mainPage.schemaField.fill('_ x:# = Only;');
+        await mainPage.dataField.fill('{"kind":"A","x":42}');
         await expect(root).toBeHidden();
+        const boc = await mainPage.bocField.inputValue();
+        await mainPage.bocField.fill('');
+        await mainPage.bocField.fill(boc);
+        await expect(root.locator('option')).toHaveText(['Choose a type', 'A', 'B']);
+        await expect(mainPage.dataField).toHaveValue('');
+        await root.selectOption({ label: 'B' });
+        await expect(mainPage.dataField).toHaveValue(/"kind": "B"/);
+        await mainPage.dataField.fill('{"kind":"A","x":43}');
+        await expect(root).toBeHidden();
+        await mainPage.dataField.fill('{"x":43}');
+        await expect(page.locator('#data-error')).toContainText('kind');
+        await mainPage.bocField.fill('');
+        await mainPage.schemaField.fill('_ x:uint16 = Short; _ y:uint32 = B;');
+        await mainPage.bocField.fill(boc);
+        await expect(root).toBeHidden();
+        await expect(mainPage.dataField).toHaveValue(/"kind": "B"/);
     });
 
     test('should display validation errors', async () => {

@@ -1,6 +1,6 @@
 import { Result } from '@ton-community/tlb-runtime';
 
-import { CellProcessor, TLBData } from './cell-processor';
+import { CellProcessor, Focus, TLBData } from './cell-processor';
 
 export class App {
     private readonly processor: CellProcessor;
@@ -11,6 +11,9 @@ export class App {
     private bocErrorSpan: HTMLSpanElement | null = null;
     private dataErrorSpan: HTMLSpanElement | null = null;
     private isUpdating = false;
+    private focus = Focus.boc;
+    private readonly rootSelect = document.querySelector<HTMLSelectElement>('#root-type')!;
+    private readonly argumentsBox = document.querySelector<HTMLElement>('#root-arguments')!;
 
     constructor() {
         this.processor = CellProcessor.default;
@@ -37,17 +40,7 @@ export class App {
             });
         }
 
-        const root = document.querySelector<HTMLInputElement>('#root-type');
-        root?.addEventListener('input', () => {
-            const input = this.processor.rootInput;
-            const value = root.value.trim();
-            this.hideFieldError('schema');
-            this.handleResult(
-                this.processor.updateRoot(input?.prefix && value ? input.prefix + ' ' + value : value),
-                'boc',
-            );
-        });
-
+        this.rootSelect.addEventListener('change', () => this.showChoice());
         if (this.bocField) {
             this.bocField.addEventListener('input', (e) => {
                 const target = e.target as HTMLTextAreaElement;
@@ -63,38 +56,88 @@ export class App {
         }
     }
 
-    private refreshRootInput(valid = true) {
-        const group = document.querySelector<HTMLElement>('#root-control')!;
-        const label = group.querySelector('label')!;
-        const field = group.querySelector('input')!;
-        const input = valid ? this.processor.rootInput : undefined;
-        group.hidden = !input;
-        field.value = '';
-        if (input) {
-            label.textContent = input.label;
-            field.placeholder = input.placeholder;
+    private refreshRootInput() {
+        const choices = this.processor.choices;
+        const group = this.rootSelect.parentElement!;
+        group.hidden = choices.length < 2;
+        this.argumentsBox.hidden = true;
+        this.argumentsBox.replaceChildren();
+        this.rootSelect.replaceChildren(new Option('Choose a type', ''));
+        for (const [i, choice] of choices.entries()) this.rootSelect.add(new Option(choice.label, String(i)));
+        if (choices.length === 1 && !choices[0].value) {
+            this.rootSelect.value = '0';
+            this.showChoice();
         }
+    }
+
+    private showChoice() {
+        const index = this.rootSelect.value === '' ? -1 : Number(this.rootSelect.value);
+        const choice = this.processor.choices[index];
+        this.argumentsBox.replaceChildren();
+        this.argumentsBox.hidden = true;
+        if (this.dataField) this.dataField.value = '';
+        this.hideFieldError('boc');
+        if (!choice) return;
+        if (choice.value) {
+            this.handleResult(this.processor.selectChoice(index), 'boc');
+            return;
+        }
+        const inputs = new Map<number, HTMLInputElement>();
+        for (const [position, arg] of choice.args.entries()) {
+            if (typeof arg === 'number') continue;
+            const label = document.createElement('label');
+            label.textContent = choice.root + ' argument ' + arg + ' ';
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '0';
+            input.step = '1';
+            inputs.set(position, input);
+            label.append(input);
+            this.argumentsBox.append(label);
+            input.addEventListener('input', () => {
+                if (this.dataField) this.dataField.value = '';
+                this.hideFieldError('boc');
+                if ([...inputs.values()].some((field) => !field.value || !field.validity.valid)) return;
+                const args = choice.args.map((item, i) =>
+                    typeof item === 'number' ? item : inputs.get(i)!.valueAsNumber,
+                );
+                this.handleResult(this.processor.selectChoice(index, args), 'boc');
+            });
+        }
+        this.argumentsBox.hidden = false;
     }
 
     private handleSchemaChange(newSchema: string) {
         if (this.isUpdating) return;
 
-        const result = this.processor.updateSchema(newSchema);
-        const valid = result.success || this.processor.state.schema === newSchema;
-        this.refreshRootInput(valid);
+        const result = this.processor.updateSchema(newSchema, this.focus);
+        this.refreshRootInput();
         this.hideFieldError('boc');
+        if (!result.success) {
+            if (this.focus === Focus.boc && this.dataField) this.dataField.value = '';
+            if (this.focus === Focus.data && this.bocField) this.bocField.value = '';
+        }
         this.handleResult(result, 'schema');
     }
 
     private handleBocChange(newBoc: string) {
         if (this.isUpdating) return;
-        this.handleResult(this.processor.updateBoc(newBoc), 'boc');
+        this.focus = Focus.boc;
+        const result = this.processor.updateBoc(newBoc);
+        if (!result.success && this.dataField) this.dataField.value = '';
+        this.hideFieldError('data');
+        this.handleResult(result, 'boc');
+        this.refreshRootInput();
     }
 
     private handleDataChange(newData: string) {
         if (this.isUpdating) return;
 
+        this.focus = Focus.data;
         const result = this.processor.updateData(newData);
+        this.refreshRootInput();
+        this.hideFieldError('boc');
+        if (!result.success && this.bocField) this.bocField.value = '';
         this.handleResult(result, 'data');
     }
 

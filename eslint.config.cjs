@@ -16,6 +16,8 @@ module.exports = [
                 HTMLTextAreaElement: 'readonly',
                 HTMLSpanElement: 'readonly',
                 HTMLInputElement: 'readonly',
+                HTMLSelectElement: 'readonly',
+                Option: 'readonly',
                 HTMLButtonElement: 'readonly',
                 HTMLElement: 'readonly',
                 Event: 'readonly',
