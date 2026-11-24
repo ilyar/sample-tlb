@@ -1,6 +1,6 @@
 # TL-B Runtime Sample
 
-The demo uses the bundled runtime built from [commit 1a06686](https://github.com/ilyar/tlb-runtime/commit/1a06686526d4f4b5f9282d718b8214bcde4c9a15).
+The demo uses runtime `1.0.0-alpha.5` built from [commit 5cf275d](https://github.com/ilyar/tlb-runtime/commit/5cf275de742b33777ceb87ddbf4e0d5f41e8f3ca).
 
 For parameterized roots, enter the type and its numeric arguments in declaration order, for example `ParamConstructor 4`. Leave the field empty for automatic root selection.
 
