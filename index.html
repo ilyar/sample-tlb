@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="./signature.css">
-    <script type="module" crossorigin src="/sample-tlb/assets/index-BCyKL1Rm.js"></script>
+    <script type="module" crossorigin src="/sample-tlb/assets/index-qW9czww5.js"></script>
   </head>
   <body>
     <div id="app">
@@ -21,21 +21,21 @@
                 <select id="docs-sample" aria-label="Documentation example">
                   <option value="" disabled selected>Sample from docs</option>
                 </select>
-                <span id="schema-error" class="field-error" style="display: none;"></span>
               </div>
               <a id="sample-source" target="_blank" rel="noopener noreferrer" hidden></a>
-              <textarea name="schema" id="schema" placeholder="TLB schema..."></textarea>
+              <span id="schema-error" class="field-error" aria-live="polite"></span>
+              <textarea aria-describedby="schema-error" name="schema" id="schema" placeholder="TLB schema..."></textarea>
             </div>
 
             <div class="field-group boc-field">
               <div class="label-row">
                 <label for="boc">BoC</label>
                 <button type="button" id="share" title="Copy a link to this schema and BoC">Share</button>
-                <span id="boc-error" class="field-error" style="display: none;"></span>
               </div>
               <span id="share-status" role="status"></span>
               <input id="share-link" aria-label="Link to copy" readonly hidden>
-              <textarea name="boc" id="boc" placeholder="BoC in base64 or hex"></textarea>
+              <span id="boc-error" class="field-error" aria-live="polite"></span>
+              <textarea aria-describedby="boc-error" name="boc" id="boc" placeholder="BoC in base64 or hex"></textarea>
               <div id="root-control" hidden>
                 <label for="root-type">Decode as</label>
                 <select id="root-type"></select>
@@ -46,9 +46,9 @@
             <div class="field-group data-field">
               <div class="label-row">
                 <label for="data">Data</label>
-                <span id="data-error" class="field-error" style="display: none;"></span>
               </div>
-              <textarea name="data" id="data" placeholder="Data in JSON"></textarea>
+              <span id="data-error" class="field-error" aria-live="polite"></span>
+              <textarea aria-describedby="data-error" name="data" id="data" placeholder="Data in JSON"></textarea>
             </div>
           </div>
         </div>
