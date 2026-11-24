@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
-    "@ton-community/tlb-runtime": "file:vendor/tlb-runtime-5cf275d.tgz",
+    "@ton-community/tlb-runtime": "file:vendor/tlb-runtime-b640498.tgz",
     "@ton/core": "^0.63.0",
     "@ton/toolchain": "the-ton-tech/toolchain#v1",
     "@types/jest": "^30.0.0",

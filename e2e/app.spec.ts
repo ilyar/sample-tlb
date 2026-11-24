@@ -230,3 +230,13 @@ test('centers the footer signature on mobile and desktop', async ({ page }) => {
         expect(Math.abs(signature!.x + signature!.width / 2 - width / 2)).toBeLessThan(1);
     }
 });
+
+test('opens the DNS ADNL address as hex and encodes it back into the sample BoC', async ({ page }) => {
+    await page.goto('./#dns-adnl-address');
+    const boc = await page.locator('#boc').inputValue();
+    const editor = page.locator('#data');
+    const record = JSON.parse(await editor.inputValue());
+    expect(record.adnl_addr).toEqual({ $bits: '7B'.padStart(64, '0') });
+    await editor.fill(JSON.stringify(record));
+    await expect(page.locator('#boc')).toHaveValue(boc);
+});
