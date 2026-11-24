@@ -6,7 +6,7 @@
     <link rel="icon" type="image/svg+xml" href="./logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./style.css">
-    <script type="module" crossorigin src="/sample-tlb/assets/index-BYG9SIZv.js"></script>
+    <script type="module" crossorigin src="/sample-tlb/assets/index-BTWUqvM9.js"></script>
   </head>
   <body>
     <div id="app">
@@ -19,10 +19,6 @@
                 <label for="schema">TL-B Schema</label>
                 <span id="schema-error" class="field-error" style="display: none;"></span>
               </div>
-              <div id="root-control" hidden>
-                <label for="root-type"></label>
-                <input id="root-type" type="text" autocomplete="off" spellcheck="false">
-              </div>
               <textarea name="schema" id="schema" placeholder="TLB schema..."></textarea>
             </div>
 
@@ -32,6 +28,11 @@
                 <span id="boc-error" class="field-error" style="display: none;"></span>
               </div>
               <textarea name="boc" id="boc" placeholder="BoC in base64 or hex"></textarea>
+              <div id="root-control" hidden>
+                <label for="root-type">Decode as</label>
+                <select id="root-type"></select>
+              </div>
+              <div id="root-arguments" hidden></div>
             </div>
 
             <div class="field-group data-field">
