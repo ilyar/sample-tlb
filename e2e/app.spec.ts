@@ -240,3 +240,25 @@ test('opens the DNS ADNL address as hex and encodes it back into the sample BoC'
     await editor.fill(JSON.stringify(record));
     await expect(page.locator('#boc')).toHaveValue(boc);
 });
+
+test('shows the entire integer range error and clears it after correction', async ({ page }) => {
+    await page.goto(
+        './#schema=long%23800000000000001+x%3Auint7+%3D+Long%3B&boc=te6cckEBAQEACwAAEYAAAAAAAAAQcJqaShY%3D',
+    );
+    const editor = page.locator('#data');
+    const error = page.locator('#data-error');
+    await editor.fill('{"kind":"Long","x":128}');
+    for (const width of [320, 800, 1440]) {
+        await page.setViewportSize({ width, height: 640 });
+        await error.scrollIntoViewIfNeeded();
+        await expect(error).toBeInViewport();
+        await expect(editor).toHaveAccessibleDescription('Value 128 is outside the range for uint7. Use 0 to 127.');
+        expect(await error.evaluate((e) => e.scrollWidth <= e.clientWidth && e.scrollHeight <= e.clientHeight)).toBe(
+            true,
+        );
+    }
+    await editor.fill('{"kind":"Long","x":127}');
+    await expect(error).toBeEmpty();
+    await expect(editor).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('#boc')).not.toHaveValue('');
+});

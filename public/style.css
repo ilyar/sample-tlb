@@ -18,7 +18,7 @@
     --bg-tertiary: rgba(0, 0, 0, 0.05);
     --text-primary: #213547;
     --text-secondary: #213547;
-    --text-error: #dc3545;
+    --text-error: #af2535;
     --border-primary: #ddd;
     --border-secondary: #ccc;
     --border-focus: #0d0df2;
@@ -68,7 +68,7 @@
     --bg-tertiary: rgba(0, 0, 0, 0.05);
     --text-primary: #213547;
     --text-secondary: #213547;
-    --text-error: #dc3545;
+    --text-error: #af2535;
     --border-primary: #ddd;
     --border-secondary: #ccc;
     --border-focus: #0d0df2;
@@ -260,24 +260,31 @@ h1 a {
 }
 
 .field-error {
-    display: inline-block;
-    margin-left: 1em;
+    flex: none;
     color: var(--text-error);
     font-size: 0.9em;
-    font-weight: 500;
-    flex-shrink: 0;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+    text-align: left;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.field-error:not(:empty) {
+    margin-bottom: 0.5rem;
+}
+
+.field-group {
+    overflow-y: auto;
+}
+
+.field-group textarea {
+    min-height: 6rem;
 }
 
 @media (max-width: 768px) {
     .fields-container {
         flex-direction: column;
         gap: 0.5rem;
+        overflow-y: auto;
     }
 
     .schema-field,
@@ -295,10 +302,6 @@ h1 a {
 
     #app {
         padding: 0.5rem;
-    }
-
-    .field-error {
-        max-width: 150px;
     }
 
 
@@ -373,10 +376,6 @@ h1 a {
         width: 100vw;
     }
 
-    .field-error {
-        max-width: 120px;
-        font-size: 0.8em;
-    }
 }
 
 .schema-field .label-row {

@@ -319,8 +319,15 @@ export class App {
         }
 
         if (errorSpan && textarea) {
-            errorSpan.textContent = message;
-            errorSpan.style.display = 'inline';
+            const overflow = /^Encode bitLength is too small for a value (-?\d+)\. Got (\d+)$/.exec(message);
+            if (overflow && Number(overflow[2]) <= 1023) {
+                const [, value, bits] = overflow;
+                const max = (1n << BigInt(bits)) - 1n;
+                errorSpan.textContent = `Value ${value} is outside the range for uint${bits}. Use 0 to ${max}.`;
+            } else {
+                errorSpan.textContent = message;
+            }
+            textarea.setAttribute('aria-invalid', 'true');
             textarea.classList.add('field-error-border');
         }
     }
@@ -345,7 +352,8 @@ export class App {
         }
 
         if (errorSpan && textarea) {
-            errorSpan.style.display = 'none';
+            errorSpan.textContent = '';
+            textarea.removeAttribute('aria-invalid');
             textarea.classList.remove('field-error-border');
         }
     }
