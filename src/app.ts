@@ -17,6 +17,7 @@ export class App {
         this.initializeUI();
         this.setupEventListeners();
         this.updateFieldsFromCore();
+        this.refreshRootInput();
     }
 
     private initializeUI() {
@@ -38,7 +39,13 @@ export class App {
 
         const root = document.querySelector<HTMLInputElement>('#root-type');
         root?.addEventListener('input', () => {
-            this.handleResult(this.processor.updateRoot(root.value), 'boc');
+            const input = this.processor.rootInput;
+            const value = root.value.trim();
+            this.hideFieldError('schema');
+            this.handleResult(
+                this.processor.updateRoot(input?.prefix && value ? input.prefix + ' ' + value : value),
+                'boc',
+            );
         });
 
         if (this.bocField) {
@@ -56,10 +63,26 @@ export class App {
         }
     }
 
+    private refreshRootInput(valid = true) {
+        const group = document.querySelector<HTMLElement>('#root-control')!;
+        const label = group.querySelector('label')!;
+        const field = group.querySelector('input')!;
+        const input = valid ? this.processor.rootInput : undefined;
+        group.hidden = !input;
+        field.value = '';
+        if (input) {
+            label.textContent = input.label;
+            field.placeholder = input.placeholder;
+        }
+    }
+
     private handleSchemaChange(newSchema: string) {
         if (this.isUpdating) return;
 
         const result = this.processor.updateSchema(newSchema);
+        const valid = result.success || this.processor.state.schema === newSchema;
+        this.refreshRootInput(valid);
+        this.hideFieldError('boc');
         this.handleResult(result, 'schema');
     }
 

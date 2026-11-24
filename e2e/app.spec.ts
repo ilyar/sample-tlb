@@ -10,6 +10,23 @@ test.describe('UI Functionality E2E Tests', () => {
         await mainPage.goto();
     });
 
+    test('shows root controls only when the schema needs a choice or arguments', async ({ page }) => {
+        const root = page.locator('#root-type');
+        await expect(root).toBeHidden();
+        await mainPage.bocField.fill('');
+        await mainPage.schemaField.fill('a$0 = Choice; b$1 = Choice;');
+        await expect(root).toBeHidden();
+        await mainPage.schemaField.fill('_ {n:#} value:(bits n) = Payload n;');
+        await expect(root).toHaveAccessibleName('Arguments for Payload (optional)');
+        await root.fill('3');
+        await mainPage.schemaField.fill('_ x:uint16 = A; _ y:uint32 = B;');
+        await expect(root).toHaveAccessibleName('Decode as (optional)');
+        await expect(root).toHaveValue('');
+        await root.fill('B');
+        await mainPage.schemaField.fill('_ x:# = Only;');
+        await expect(root).toBeHidden();
+    });
+
     test('should display validation errors', async () => {
         await mainPage.enterInvalidSchema(testData.schemas.invalid);
         await mainPage.waitForValidation(testData.timeouts.short);

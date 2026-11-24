@@ -18,8 +18,10 @@
                 <label for="schema">TL-B Schema</label>
                 <span id="schema-error" class="field-error" style="display: none;"></span>
               </div>
-              <label for="root-type">Root type and arguments (optional)</label>
-              <input id="root-type" type="text" placeholder="e.g. ParamConstructor 4" autocomplete="off" spellcheck="false">
+              <div id="root-control" hidden>
+                <label for="root-type"></label>
+                <input id="root-type" type="text" autocomplete="off" spellcheck="false">
+              </div>
               <textarea name="schema" id="schema" placeholder="TLB schema..."></textarea>
             </div>
 

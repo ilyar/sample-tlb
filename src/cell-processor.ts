@@ -82,6 +82,22 @@ export class CellProcessor {
         };
     }
 
+    get rootInput() {
+        const types = [...this.runtime.getTypes().values()].filter((type) =>
+            type.constructors.some((constructor) => constructor.declaration),
+        );
+        if (types.length > 1) return { prefix: '', label: 'Decode as (optional)', placeholder: types[0].name };
+        const type = types[0];
+        if (
+            type?.constructors.some((constructor) =>
+                constructor.parameters.some((p) => p.variable.type === '#' && !p.variable.negated),
+            )
+        ) {
+            return { prefix: type.name, label: `Arguments for ${type.name} (optional)`, placeholder: 'e.g. 4' };
+        }
+        return undefined;
+    }
+
     static get default(): CellProcessor {
         return new CellProcessor(defaultSchema, defaultBoc);
     }
@@ -114,6 +130,7 @@ export class CellProcessor {
             return result;
         }
         this.runtime = result.value;
+        this.root = '';
 
         if (focus === Focus.boc) {
             return this.updateBoc(this.boc);
