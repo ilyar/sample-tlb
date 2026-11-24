@@ -166,5 +166,69 @@
     "boc": "te6cckEBBgEALAACBgcAAwEFAgACAwASAQAAAAAAAAAsAQIDBAAKALW9PrAAEgH//////////yC3MlU=",
     "kind": "VmStackValue_vm_stk_tuple",
     "documentation": "https://docs.ton.org/foundations/tlb/complex-and-non-trivial-examples#vmtuple"
+  },
+  {
+    "group": "TEP examples",
+    "title": "NFT transfer",
+    "schema": "nothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\naddr_none$00 = MsgAddressExt;\naddr_extern$01 len:(## 9) external_address:(bits len) = MsgAddressExt;\nanycast_info$_ depth:(#<= 30) { depth >= 1 } rewrite_pfx:(bits depth) = Anycast;\naddr_std$10 anycast:(Maybe Anycast) workchain_id:int8 address:bits256  = MsgAddressInt;\naddr_var$11 anycast:(Maybe Anycast) addr_len:(## 9) workchain_id:int32 address:(bits addr_len) = MsgAddressInt;\n_ _:MsgAddressInt = MsgAddress;\n_ _:MsgAddressExt = MsgAddress;\nvar_uint$_ {n:#} len:(#< n) value:(uint (len * 8)) = VarUInteger n;\nleft$0 {X:Type} {Y:Type} value:X = Either X Y;\nright$1 {X:Type} {Y:Type} value:Y = Either X Y;\ntransfer#5fcc3d14 query_id:uint64 new_owner:MsgAddress response_destination:MsgAddress custom_payload:(Maybe ^Cell) forward_amount:(VarUInteger 16) forward_payload:(Either Cell ^Cell) = InternalMsgBody;",
+    "boc": "te6cckEBAgEAXwABoV/MPRQAAAAAAAAAEYACQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQlAA0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NAg+AEAEgAAAABIZWxsb2o1XyQ=",
+    "kind": "InternalMsgBody",
+    "documentation": "https://docs.ton.org/foundations/tlb/tep-examples#nft"
+  },
+  {
+    "group": "TEP examples",
+    "title": "Jetton transfer",
+    "schema": "nothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\naddr_none$00 = MsgAddressExt;\naddr_extern$01 len:(## 9) external_address:(bits len) = MsgAddressExt;\nanycast_info$_ depth:(#<= 30) { depth >= 1 } rewrite_pfx:(bits depth) = Anycast;\naddr_std$10 anycast:(Maybe Anycast) workchain_id:int8 address:bits256  = MsgAddressInt;\naddr_var$11 anycast:(Maybe Anycast) addr_len:(## 9) workchain_id:int32 address:(bits addr_len) = MsgAddressInt;\n_ _:MsgAddressInt = MsgAddress;\n_ _:MsgAddressExt = MsgAddress;\nvar_uint$_ {n:#} len:(#< n) value:(uint (len * 8)) = VarUInteger n;\nleft$0 {X:Type} {Y:Type} value:X = Either X Y;\nright$1 {X:Type} {Y:Type} value:Y = Either X Y;\ntransfer#0f8a7ea5 query_id:uint64 amount:(VarUInteger 16) destination:MsgAddress response_destination:MsgAddress custom_payload:(Maybe ^Cell) forward_ton_amount:(VarUInteger 16) forward_payload:(Either Cell ^Cell) = InternalMsgBody;",
+    "boc": "te6cckEBAgEAYgABuA+KfqUAAAAAAAAAEia7+AAkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJQANDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDSIOAAAAAEhlbGxvAQACKjJLNFM=",
+    "kind": "InternalMsgBody",
+    "documentation": "https://docs.ton.org/foundations/tlb/tep-examples#jetton"
+  },
+  {
+    "group": "TEP examples",
+    "title": "Jetton transfer notification",
+    "schema": "nothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\naddr_none$00 = MsgAddressExt;\naddr_extern$01 len:(## 9) external_address:(bits len) = MsgAddressExt;\nanycast_info$_ depth:(#<= 30) { depth >= 1 } rewrite_pfx:(bits depth) = Anycast;\naddr_std$10 anycast:(Maybe Anycast) workchain_id:int8 address:bits256  = MsgAddressInt;\naddr_var$11 anycast:(Maybe Anycast) addr_len:(## 9) workchain_id:int32 address:(bits addr_len) = MsgAddressInt;\n_ _:MsgAddressInt = MsgAddress;\n_ _:MsgAddressExt = MsgAddress;\nvar_uint$_ {n:#} len:(#< n) value:(uint (len * 8)) = VarUInteger n;\nleft$0 {X:Type} {Y:Type} value:X = Either X Y;\nright$1 {X:Type} {Y:Type} value:Y = Either X Y;\ntransfer_notification#7362d09c query_id:uint64 amount:(VarUInteger 16) sender:MsgAddress forward_payload:(Either Cell ^Cell) = InternalMsgBody;",
+    "boc": "te6cckEBAQEAOwAAcnNi0JwAAAAAAAAAEia7+ABoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaAAAAABIZWxsb+6OcBM=",
+    "kind": "InternalMsgBody",
+    "documentation": "https://docs.ton.org/foundations/tlb/tep-examples#jetton"
+  },
+  {
+    "group": "TEP examples",
+    "title": "DNS smart contract address",
+    "schema": "nothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\naddr_none$00 = MsgAddressExt;\naddr_extern$01 len:(## 9) external_address:(bits len) = MsgAddressExt;\nanycast_info$_ depth:(#<= 30) { depth >= 1 } rewrite_pfx:(bits depth) = Anycast;\naddr_std$10 anycast:(Maybe Anycast) workchain_id:int8 address:bits256  = MsgAddressInt;\naddr_var$11 anycast:(Maybe Anycast) addr_len:(## 9) workchain_id:int32 address:(bits addr_len) = MsgAddressInt;\n_ _:MsgAddressInt = MsgAddress;\n_ _:MsgAddressExt = MsgAddress;\ndns_next_resolver#ba93 resolver:MsgAddressInt = DNSRecord;\ndns_adnl_address#ad01 adnl_addr:bits256 flags:(## 8) { flags <= 1 }\n  proto_list:flags . 0?ProtoList = DNSRecord;\nproto_list_nil$0 = ProtoList;\nproto_list_next$1 head:Protocol tail:ProtoList = ProtoList;\nproto_http#4854 = Protocol;\ndns_smc_address#9fd3 smc_addr:MsgAddressInt flags:(## 8) { flags <= 1 }\n  cap_list:flags . 0?SmcCapList = DNSRecord;\ncap_list_nil$0 = SmcCapList;\ncap_list_next$1 head:SmcCapability tail:SmcCapList = SmcCapList;\ncap_is_wallet#2177 = SmcCapability;\ndns_storage_address#7473 bag_id:bits256 = DNSRecord;",
+    "boc": "te6cckEBAQEAKQAATZ/TgAJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQDIXdI/BxG0=",
+    "kind": "DNSRecord_dns_smc_address",
+    "documentation": "https://docs.ton.org/foundations/tlb/tep-examples#dns"
+  },
+  {
+    "group": "TEP examples",
+    "title": "DNS next resolver",
+    "schema": "nothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\naddr_none$00 = MsgAddressExt;\naddr_extern$01 len:(## 9) external_address:(bits len) = MsgAddressExt;\nanycast_info$_ depth:(#<= 30) { depth >= 1 } rewrite_pfx:(bits depth) = Anycast;\naddr_std$10 anycast:(Maybe Anycast) workchain_id:int8 address:bits256  = MsgAddressInt;\naddr_var$11 anycast:(Maybe Anycast) addr_len:(## 9) workchain_id:int32 address:(bits addr_len) = MsgAddressInt;\n_ _:MsgAddressInt = MsgAddress;\n_ _:MsgAddressExt = MsgAddress;\ndns_next_resolver#ba93 resolver:MsgAddressInt = DNSRecord;\ndns_adnl_address#ad01 adnl_addr:bits256 flags:(## 8) { flags <= 1 }\n  proto_list:flags . 0?ProtoList = DNSRecord;\nproto_list_nil$0 = ProtoList;\nproto_list_next$1 head:Protocol tail:ProtoList = ProtoList;\nproto_http#4854 = Protocol;\ndns_smc_address#9fd3 smc_addr:MsgAddressInt flags:(## 8) { flags <= 1 }\n  cap_list:flags . 0?SmcCapList = DNSRecord;\ncap_list_nil$0 = SmcCapList;\ncap_list_next$1 head:SmcCapability tail:SmcCapList = SmcCapList;\ncap_is_wallet#2177 = SmcCapability;\ndns_storage_address#7473 bag_id:bits256 = DNSRecord;",
+    "boc": "te6cckEBAQEAJgAAR7qTgAaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGkP+oDdQ=",
+    "kind": "DNSRecord_dns_next_resolver",
+    "documentation": "https://docs.ton.org/foundations/tlb/tep-examples#dns"
+  },
+  {
+    "group": "TEP examples",
+    "title": "DNS ADNL address",
+    "schema": "nothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\naddr_none$00 = MsgAddressExt;\naddr_extern$01 len:(## 9) external_address:(bits len) = MsgAddressExt;\nanycast_info$_ depth:(#<= 30) { depth >= 1 } rewrite_pfx:(bits depth) = Anycast;\naddr_std$10 anycast:(Maybe Anycast) workchain_id:int8 address:bits256  = MsgAddressInt;\naddr_var$11 anycast:(Maybe Anycast) addr_len:(## 9) workchain_id:int32 address:(bits addr_len) = MsgAddressInt;\n_ _:MsgAddressInt = MsgAddress;\n_ _:MsgAddressExt = MsgAddress;\ndns_next_resolver#ba93 resolver:MsgAddressInt = DNSRecord;\ndns_adnl_address#ad01 adnl_addr:bits256 flags:(## 8) { flags <= 1 }\n  proto_list:flags . 0?ProtoList = DNSRecord;\nproto_list_nil$0 = ProtoList;\nproto_list_next$1 head:Protocol tail:ProtoList = ProtoList;\nproto_http#4854 = Protocol;\ndns_smc_address#9fd3 smc_addr:MsgAddressInt flags:(## 8) { flags <= 1 }\n  cap_list:flags . 0?SmcCapList = DNSRecord;\ncap_list_nil$0 = SmcCapList;\ncap_list_next$1 head:SmcCapability tail:SmcCapList = SmcCapList;\ncap_is_wallet#2177 = SmcCapability;\ndns_storage_address#7473 bag_id:bits256 = DNSRecord;",
+    "boc": "te6cckEBAQEAKAAAS60BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHsBpCogujAahw==",
+    "kind": "DNSRecord_dns_adnl_address",
+    "documentation": "https://docs.ton.org/foundations/tlb/tep-examples#dns"
+  },
+  {
+    "group": "TEP examples",
+    "title": "DNS storage address",
+    "schema": "nothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\naddr_none$00 = MsgAddressExt;\naddr_extern$01 len:(## 9) external_address:(bits len) = MsgAddressExt;\nanycast_info$_ depth:(#<= 30) { depth >= 1 } rewrite_pfx:(bits depth) = Anycast;\naddr_std$10 anycast:(Maybe Anycast) workchain_id:int8 address:bits256  = MsgAddressInt;\naddr_var$11 anycast:(Maybe Anycast) addr_len:(## 9) workchain_id:int32 address:(bits addr_len) = MsgAddressInt;\n_ _:MsgAddressInt = MsgAddress;\n_ _:MsgAddressExt = MsgAddress;\ndns_next_resolver#ba93 resolver:MsgAddressInt = DNSRecord;\ndns_adnl_address#ad01 adnl_addr:bits256 flags:(## 8) { flags <= 1 }\n  proto_list:flags . 0?ProtoList = DNSRecord;\nproto_list_nil$0 = ProtoList;\nproto_list_next$1 head:Protocol tail:ProtoList = ProtoList;\nproto_http#4854 = Protocol;\ndns_smc_address#9fd3 smc_addr:MsgAddressInt flags:(## 8) { flags <= 1 }\n  cap_list:flags . 0?SmcCapList = DNSRecord;\ncap_list_nil$0 = SmcCapList;\ncap_list_next$1 head:SmcCapability tail:SmcCapList = SmcCapList;\ncap_is_wallet#2177 = SmcCapability;\ndns_storage_address#7473 bag_id:bits256 = DNSRecord;",
+    "boc": "te6cckEBAQEAJAAARHRzAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACr+Pa1M",
+    "kind": "DNSRecord_dns_storage_address",
+    "documentation": "https://docs.ton.org/foundations/tlb/tep-examples#dns"
+  },
+  {
+    "group": "TEP examples",
+    "title": "DNS record set",
+    "schema": "nothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\naddr_none$00 = MsgAddressExt;\naddr_extern$01 len:(## 9) external_address:(bits len) = MsgAddressExt;\nanycast_info$_ depth:(#<= 30) { depth >= 1 } rewrite_pfx:(bits depth) = Anycast;\naddr_std$10 anycast:(Maybe Anycast) workchain_id:int8 address:bits256  = MsgAddressInt;\naddr_var$11 anycast:(Maybe Anycast) addr_len:(## 9) workchain_id:int32 address:(bits addr_len) = MsgAddressInt;\n_ _:MsgAddressInt = MsgAddress;\n_ _:MsgAddressExt = MsgAddress;\ndns_next_resolver#ba93 resolver:MsgAddressInt = DNSRecord;\ndns_adnl_address#ad01 adnl_addr:bits256 flags:(## 8) { flags <= 1 }\n  proto_list:flags . 0?ProtoList = DNSRecord;\nproto_list_nil$0 = ProtoList;\nproto_list_next$1 head:Protocol tail:ProtoList = ProtoList;\nproto_http#4854 = Protocol;\ndns_smc_address#9fd3 smc_addr:MsgAddressInt flags:(## 8) { flags <= 1 }\n  cap_list:flags . 0?SmcCapList = DNSRecord;\ncap_list_nil$0 = SmcCapList;\ncap_list_next$1 head:SmcCapability tail:SmcCapList = SmcCapList;\ncap_is_wallet#2177 = SmcCapability;\ndns_storage_address#7473 bag_id:bits256 = DNSRecord;\nbit$_ (## 1) = Bit;\nunary_zero$0 = Unary ~0;\nunary_succ$1 {n:#} x:(Unary ~n) = Unary ~(n + 1);\nhml_short$0 {m:#} {n:#} len:(Unary ~n) {n <= m} s:(n * Bit) = HmLabel ~n m;\nhml_long$10 {m:#} n:(#<= m) s:(n * Bit) = HmLabel ~n m;\nhml_same$11 {m:#} v:Bit n:(#<= m) = HmLabel ~n m;\nhm_edge#_ {n:#} {X:Type} {l:#} {m:#} label:(HmLabel ~l n) {n = (~m) + l} node:(HashmapNode m X) = Hashmap n X;\nhmn_leaf#_ {X:Type} value:X = HashmapNode 0 X;\nhmn_fork#_ {n:#} {X:Type} left:^(Hashmap n X) right:^(Hashmap n X) = HashmapNode (n + 1) X;\nhme_empty$0 {n:#} {X:Type} = HashmapE n X;\nhme_root$1 {n:#} {X:Type} root:^(Hashmap n X) = HashmapE n X;\n_ records:(HashmapE 256 ^DNSRecord) = DNSRecordSet;",
+    "boc": "te6cckEBAwEAUgABAcABAUOgHRqIChDnt1DLVPguFWmZzJshBzRpufrZ7jopwECoh2NwAgBNn9OAAkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJAMhd04HZ2eQ==",
+    "kind": "DNSRecordSet",
+    "documentation": "https://docs.ton.org/foundations/tlb/tep-examples#dns"
   }
 ]
