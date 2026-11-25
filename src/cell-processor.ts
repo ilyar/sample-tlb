@@ -1,7 +1,7 @@
 import { beginCell, BitString, Cell, Dictionary, ExternalAddress } from '@ton/core';
 import { TLBRuntime, Result, unwrap, replacer, blockSchema } from '@ton-community/tlb-runtime';
 
-import { readBocRoots } from './share-format';
+import { readBocRoots } from './boc';
 import { DecodeChoice, decodeChoices, withArguments } from './decode-choices';
 
 export const defaultSchema = 'message#_ len:(## 7) { len <= 127 } text:(bits (len * 8)) = Message;';

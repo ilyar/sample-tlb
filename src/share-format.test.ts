@@ -4,62 +4,37 @@ import { beginCell, Cell } from '@ton/core';
 import { runtimeBy } from '@ton-community/tlb-runtime';
 
 import samples from './samples.json';
-import { decodeShare, encodeShare, parseShareHash, shareSchema } from './share-format';
+import { encodeShareCell, encodeShareHash, parseShareHash } from './share-format';
 
 const dataCell = beginCell().storeUint(1, 1).endCell();
 const boc = dataCell.toBoc().toString('base64');
 const multiRoot = 'b5ee9c7201010202000600010002aa0002bb';
 
-function envelope(schema: Cell, version = 1, compressed = false) {
+function envelope(schema: Cell, version = 1) {
     return beginCell()
         .storeUint(version, 8)
-        .storeBit(compressed)
+        .storeUint(1, 2)
         .storeRef(schema)
-        .storeUint(0, 2)
-        .storeMaybeRef(null)
+        .storeUint(0, 3)
         .endCell()
         .toBoc({ idx: false, crc32: false })
         .toString('base64url');
 }
 
-function snake(bytes: Buffer) {
-    let cell: Cell | null = null;
-    for (let end = bytes.length; end > 0; end -= 126) {
-        const chunk = bytes.subarray(Math.max(0, end - 126), end);
-        cell = beginCell()
-            .storeUint(chunk.length * 8, 10)
-            .storeBuffer(chunk)
-            .storeMaybeRef(cell)
-            .endCell();
-    }
-    return cell ?? beginCell().storeUint(0, 10).storeMaybeRef(null).endCell();
-}
-
-function unpack(encoded: string) {
-    expect(encoded).toMatch(/^[A-Za-z0-9_-]+$/);
-    const bytes = Buffer.from(encoded, 'base64url');
-    expect(bytes[4] & 0xc0).toBe(0); // No index or CRC in the outer BoC.
-    const roots = Cell.fromBoc(bytes);
-    expect(roots).toHaveLength(1);
-    const slice = roots[0].beginParse();
-    expect(slice.loadUint(8)).toBe(1);
-    const compressed = slice.loadBit();
-    const schema = slice.loadRef();
-    const tag = slice.loadUint(2);
-    return { slice, compressed, schema, tag };
-}
-
-test('keeps short schema bytes and compresses repetitive schema bytes', async () => {
-    for (const [schema, compressed] of [
-        ['x', false],
-        ['abc '.repeat(1000), true],
-    ] as const) {
-        const encoded = await encodeShare({ schema, boc });
-        expect(unpack(encoded).compressed).toBe(compressed);
-        expect(await decodeShare(encoded)).toEqual({ schema, boc, decodeAs: undefined });
-        if (compressed)
-            expect(('#tlb=' + encoded).length).toBeLessThan(('#' + new URLSearchParams({ schema, boc })).length);
-    }
+test.each([
+    ['x', false],
+    ['abc '.repeat(1000), true],
+] as const)('selects transport by final length', async (schema, compressed) => {
+    const state = { mode: 'boc', schema, boc } as const;
+    const bytes = encodeShareCell(state).toBoc({ idx: false, crc32: false });
+    const raw = '#share=' + bytes.toString('base64url');
+    const packed = '#share=deflate.' + deflateRawSync(bytes).toString('base64url');
+    const hash = await encodeShareHash(state);
+    expect(hash.startsWith('#share=deflate.')).toBe(compressed);
+    expect(hash).toBe(packed.length < raw.length ? packed : raw);
+    if (!compressed)
+        expect(Cell.fromBoc(Buffer.from(hash.slice(7), 'base64url'))[0].equals(encodeShareCell(state))).toBe(true);
+    expect(await parseShareHash(hash)).toEqual(state);
 });
 
 test.each([
@@ -73,99 +48,66 @@ test.each([
     [boc.slice(0, -4), 2],
     [dataCell.toBoc().toString('hex') + '?', 2],
 ] as const)('preserves BoC input %j using BocInput tag %i', async (input, expected) => {
-    const encoded = await encodeShare({ schema: '', boc: input });
-    const { slice, schema, tag } = unpack(encoded);
-    const empty = schema.beginParse();
-    expect(empty.loadUint(10)).toBe(0);
-    expect(empty.loadMaybeRef()).toBeNull();
-    empty.endParse();
+    const encoded = await encodeShareHash({ mode: 'boc', schema: '', boc: input });
+    const slice = encodeShareCell({ mode: 'boc', schema: '', boc: input }).beginParse();
+    expect(slice.loadUint(8)).toBe(1);
+    expect(slice.loadUint(2)).toBe(1);
+    slice.loadRef().beginParse().endParse();
+    expect(slice.loadBit()).toBe(false);
+    const tag = slice.loadUint(2);
     expect(tag).toBe(expected);
     if (tag === 1) expect(slice.loadRef().equals(dataCell)).toBe(true);
     if (tag === 2) slice.loadRef();
-    expect(slice.loadMaybeRef()).toBeNull();
+
     slice.endParse();
-    expect((await decodeShare(encoded)).boc).toBe(expected === 1 ? boc : expected === 2 ? input : '');
-});
-
-test('round-trips multi-chunk UTF-8 and Decode as without CompressionStream', async () => {
-    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'CompressionStream')!;
-    Object.defineProperty(globalThis, 'CompressionStream', { configurable: true, value: undefined });
-    try {
-        const input = { schema: '\uFEFF' + '模式🙂'.repeat(150), boc, decodeAs: 'Example' };
-        const encoded = await encodeShare(input);
-        const { compressed, schema } = unpack(encoded);
-        expect(compressed).toBe(false);
-        expect(schema.depth()).toBeGreaterThan(8);
-        expect(await decodeShare(encoded)).toEqual(input);
-    } finally {
-        Object.defineProperty(globalThis, 'CompressionStream', descriptor);
-    }
-});
-
-test('the documented SharePayload schema reads the outer BoC with tlb-runtime', async () => {
-    const sample = samples.find((entry) => entry.id === 'tlb-share')!;
-    expect(sample.schema).toBe(shareSchema);
-    const schema = sample.schema;
-    const legacyHash = Buffer.from(sample.boc, 'base64').toString('base64url');
-    const decoded = await decodeShare(legacyHash);
-    expect(decoded.schema).toBe('_ value:uint8 = Example;');
-    expect(Cell.fromBase64(decoded.boc).beginParse().loadUint(8)).toBe(42);
-    expect(await encodeShare(decoded)).toBe(legacyHash);
-    const encoded = await encodeShare({ schema: 'abc', boc, decodeAs: 'Example' });
-    const cell = Cell.fromBoc(Buffer.from(encoded, 'base64url'))[0];
-    expect(runtimeBy(schema).decodeCell(cell, { rootType: 'SharePayload' })).toMatchObject({
-        kind: 'SharePayload',
-        compressed: false,
-        schema: { kind: 'SnakeBytes', len: 24, data: 'abc' },
-        boc: { kind: 'BocInput_boc_cell' },
-        decode_as: { kind: 'Maybe_just', value: { data: 'Example' } },
+    expect(await parseShareHash(encoded)).toMatchObject({
+        mode: 'boc',
+        boc: expected === 1 ? boc : expected === 2 ? input : '',
     });
 });
 
-test('opens the original tagged constructor link unchanged', async () => {
-    const hash =
-        '#schema=tagged_off%240+%3D+Tagged%3B%0A_+value%3Auint1+%3D+Fallback%3B%0Atagged_on%241+%3D+Tagged%3B&boc=te6cckEBAQEAAwAAAcCO6ba2';
-    expect(await parseShareHash(hash)).toEqual({
-        schema: 'tagged_off$0 = Tagged;\n_ value:uint1 = Fallback;\ntagged_on$1 = Tagged;',
-        boc,
+test.each(['{}', '', '{broken', JSON.stringify({ message: 'x'.repeat(10000) })])('shares Data text', async (data) => {
+    const state = { mode: 'data', schema: 'x', data, as: 'Fallback' } as const;
+    const hash = await encodeShareHash(state);
+    expect(hash.endsWith('&as=Fallback')).toBe(true);
+    expect(await parseShareHash(hash)).toEqual(state);
+    expect(await encodeShareHash({ ...state, as: '' })).not.toContain('&as=');
+});
+
+test('decodes the playground sample', async () => {
+    const sample = samples.find((s) => s.id === 'tlb-share')!;
+    expect(runtimeBy(sample.schema).decodeCell(Cell.fromBase64(sample.boc), { rootType: 'Share' })).toMatchObject({
+        kind: 'Share',
     });
+    expect(await parseShareHash('#share=' + Buffer.from(sample.boc, 'base64').toString('base64url'))).toMatchObject({
+        mode: 'boc',
+        schema: '_ value:uint8 = Example;',
+    });
+    for (const hash of ['#schema=x&boc=y', '#tlb=' + sample.boc, '#tlb-share', '#share='])
+        expect(await parseShareHash(hash)).toBeUndefined();
 });
 
 test('warns and falls back on malformed or oversized payloads even with legacy parameters', async () => {
-    const empty = snake(Buffer.alloc(0));
-    const badLength = beginCell().storeUint(1, 10).storeBit(0).storeMaybeRef(null).endCell();
+    const empty = Cell.EMPTY;
+    const badLength = beginCell().storeBit(0).endCell();
     let tooDeep = empty;
-    for (let i = 0; i < 2048; i++) tooDeep = beginCell().storeUint(0, 10).storeMaybeRef(tooDeep).endCell();
+    for (let i = 0; i < 2048; i++) tooDeep = beginCell().storeRef(tooDeep).endCell();
     const invalid = [
         '%%%',
         envelope(empty, 2),
         envelope(badLength),
         envelope(empty).slice(0, -3),
-        envelope(snake(Buffer.from([0xff, 0xff])), 1, true),
-        envelope(snake(deflateRawSync(Buffer.alloc(1024 * 1024 + 1))), 1, true),
+        'deflate.__8',
+        'gzip.' + envelope(empty),
+        'deflate.' + deflateRawSync(Buffer.alloc(1024 * 1024 + 1)).toString('base64url'),
         envelope(tooDeep),
         Buffer.from(multiRoot, 'hex').toString('base64url'),
     ];
     const warn = jest.spyOn(console, 'warn').mockImplementation();
     try {
-        for (const value of invalid) expect(await parseShareHash('#schema=x&boc=y&tlb=' + value)).toBeUndefined();
+        for (const value of invalid) expect(await parseShareHash('#share=' + value)).toBeUndefined();
         expect(warn).toHaveBeenCalledTimes(invalid.length);
     } finally {
         warn.mockRestore();
-    }
-});
-
-test.each(['SharePayload', 'SnakeBytes'])('rejects trailing bits and references in %s', async (type) => {
-    const sample = samples.find((entry) => entry.id === 'tlb-share')!;
-    const root = Cell.fromBase64(sample.boc);
-    const target = type === 'SharePayload' ? root : root.refs[0];
-    for (const extra of ['bit', 'ref']) {
-        const builder = beginCell().storeSlice(target.beginParse());
-        if (extra === 'bit') builder.storeBit(0);
-        else builder.storeRef(Cell.EMPTY);
-        const invalid = builder.endCell();
-        const outer =
-            type === 'SharePayload' ? invalid : new Cell({ bits: root.bits, refs: [invalid, ...root.refs.slice(1)] });
-        await expect(decodeShare(outer.toBoc().toString('base64url'))).rejects.toThrow();
     }
 });

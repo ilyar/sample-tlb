@@ -10,11 +10,11 @@ The JSON editor represents a cell as `{"$cell":"<base64 BoC>"}`, a raw bit strin
 
 ## Share links
 
-**Share** copies a `#tlb=<base64url>` link with the schema, BoC and selected **Decode as** type. A single-root BoC reopens in standard Base64. Empty input stays empty, and incomplete or multi-root input keeps its original text. Older `#schema=...&boc=...` links and documentation sample links still open.
+**Share** copies a `#share=<base64url>` link with the schema and the contents of the corresponding BoC or Data editor. An explicit type selection is stored in `&as=`. A single-root BoC reopens in standard Base64. Empty input stays empty, and incomplete or multi-root input keeps its original text. Data links preserve the JSON text, including incomplete edits.
 
-Share uses TL-B Runtime to encode and decode the envelope. Open [Sample schemas → Usecase → TL-B Share](https://ilyar.github.io/sample-tlb/#tlb-share) for the schema, a prepared cell and the implementation. To inspect another share link, paste the value after `#tlb=` into **BoC**.
+Share uses TL-B Runtime to encode and decode the envelope. Open [Sample schemas → Usecase → TL-B Share](https://ilyar.github.io/sample-tlb/#tlb-share) for the schema, a prepared cell and the implementation. For a raw link, paste the value of `share` into **BoC** to inspect the envelope.
 
-Each snake holds up to 2048 chunks of 126 bytes. The schema contains UTF-8 bytes, compressed with raw DEFLATE only when that saves space. The decompressed schema limit is 1 MiB.
+Each snake holds up to 2048 chunks of 127 bytes. Schema and Data contain UTF-8 text. The entire BoC is limited to 1 MiB. Links use `#share=deflate.<base64url>` when raw DEFLATE makes the URL shorter, including the eight-character prefix.
 
 ## Sample schemas
 

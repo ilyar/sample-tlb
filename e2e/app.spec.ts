@@ -1,6 +1,15 @@
-import { test, expect } from '@playwright/test';
+import { randomBytes } from 'node:crypto';
+
+import { test, expect, type Page } from '@playwright/test';
 
 import { MainPage, testData } from './app';
+
+async function openBoc(page: Page, schema: string, boc: string) {
+    await page.goto('./');
+    await expect(page.locator('#data')).toContainText('Message');
+    await page.locator('#schema').fill(schema);
+    await page.locator('#boc').fill(boc);
+}
 
 test.describe('UI Functionality E2E Tests', () => {
     let mainPage: MainPage;
@@ -34,11 +43,14 @@ test.describe('UI Functionality E2E Tests', () => {
     });
 
     test('decodes a shared BoC by its tag when a tagless fallback also matches', async ({ page }) => {
-        const hash = new URLSearchParams({
-            schema: 'tagged_off$0 = Tagged;\n_ value:uint1 = Fallback;\ntagged_on$1 = Tagged;',
-            boc: 'te6cckEBAQEAAwAAAcCO6ba2',
-        });
-        await page.goto('/#' + hash);
+        await openBoc(
+            page,
+            'tagged_off$0 = Tagged;\n_ value:uint1 = Fallback;\ntagged_on$1 = Tagged;',
+            'te6cckEBAQEAAwAAAcCO6ba2',
+        );
+        await page.locator('#share').click();
+        await expect(page).toHaveURL(/#share=/);
+        await page.reload();
         await expect(mainPage.dataField).toHaveText(/"kind": "Tagged_tagged_on"/);
         await expect(page.locator('#root-type')).toBeHidden();
     });
@@ -218,14 +230,14 @@ test('restores linked samples and navigates their history', async ({ page }) => 
 test('shares a selected root and restores it after reload', async ({ page }) => {
     const schema = '_ x:uint1 = First; _ y:uint1 = Second;';
     const boc = 'te6cckEBAQEAAwAAAcCO6ba2';
-    await page.goto('./#' + new URLSearchParams({ schema, boc }));
+    await openBoc(page, schema, boc);
     await page.locator('#root-type').selectOption({ label: 'Second' });
     await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { value: undefined }));
-    await page.getByRole('button', { name: 'Share' }).click();
+    await page.locator('#share').click();
     const field = page.getByRole('textbox', { name: 'Link to copy' });
     await expect(field).toBeVisible();
     const link = await field.inputValue();
-    expect(new URL(link).hash).toMatch(/^#tlb=[A-Za-z0-9_-]+$/);
+    expect(new URL(link).hash).toMatch(/^#share=(?:deflate\.)?[A-Za-z0-9_-]+&as=Second$/);
     expect(page.url()).toBe(link);
     await page.reload();
     await expect(page.locator('#schema')).toHaveText(schema);
@@ -235,33 +247,32 @@ test('shares a selected root and restores it after reload', async ({ page }) => 
 });
 
 test('reads a share envelope pasted into BoC using the documented schema', async ({ page }) => {
-    await page.goto('./');
-    await expect(page.locator('#data')).toContainText('Message');
-    await page.getByRole('button', { name: 'Share' }).click();
-    await expect(page).toHaveURL(/#tlb=[A-Za-z0-9_-]+$/);
-    const payload = new URL(page.url()).hash.slice('#tlb='.length);
+    await openBoc(page, '_ x:uint1 = T;', 'te6cckEBAQEAAwAAAcCO6ba2');
+    await page.locator('#share').click();
+    await expect(page).toHaveURL(/#share=[A-Za-z0-9_-]+$/);
+    const payload = new URL(page.url()).hash.slice('#share='.length);
     const picker = page.getByRole('combobox', { name: 'Sample schemas' });
     await expect(picker.locator('optgroup[label="Usecase"] option')).toHaveText('TL-B Share');
     await picker.selectOption({ label: 'TL-B Share' });
     await expect(page).toHaveURL(/#tlb-share$/);
-    await expect(page.locator('#data')).toContainText('"kind": "SharePayload"');
+    await expect(page.locator('#data')).toContainText('"kind": "Share"');
     await expect(page.locator('#sample-source')).toHaveAttribute(
         'href',
         'https://github.com/ilyar/sample-tlb/blob/main/src/share-format.ts',
     );
     await page.locator('#boc').fill(payload);
     const selector = page.locator('#root-type');
-    if (await selector.isVisible()) await selector.selectOption({ label: 'SharePayload' });
-    await expect(page.locator('#data')).toContainText('"kind": "SharePayload"');
+    if (await selector.isVisible()) await selector.selectOption({ label: 'Share' });
+    await expect(page.locator('#data')).toContainText('"kind": "Share"');
     await expect(page.locator('#boc-error')).toBeEmpty();
 });
 
 test('warns about long share links and preserves raw BoC input', async ({ page }) => {
     await page.goto('./');
     await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { value: undefined }));
-    const raw = 'unfinished BoC '.repeat(240);
+    const raw = 'unfinished ' + randomBytes(4096).toString('base64');
     await page.locator('#boc').fill(raw);
-    await page.getByRole('button', { name: 'Share' }).click();
+    await page.locator('#share').click();
     await expect(page.locator('#share-status')).toContainText('4,000');
     await expect(page.getByRole('textbox', { name: 'Link to copy' })).toBeVisible();
     await page.reload();
@@ -288,9 +299,7 @@ test('opens the DNS ADNL address as hex and encodes it back into the sample BoC'
 });
 
 test('shows the entire integer range error and clears it after correction', async ({ page }) => {
-    await page.goto(
-        './#schema=long%23800000000000001+x%3Auint7+%3D+Long%3B&boc=te6cckEBAQEACwAAEYAAAAAAAAAQcJqaShY%3D',
-    );
+    await openBoc(page, 'long#800000000000001 x:uint7 = Long;', 'te6cckEBAQEACwAAEYAAAAAAAAAQcJqaShY=');
     const editor = page.locator('#data');
     const error = page.locator('#data-error');
     await editor.fill('{"kind":"Long","x":128}');
@@ -344,9 +353,7 @@ test('preserves in-progress JSON, cursor position, folding and mobile editor inp
     await data.press('End');
     await page.keyboard.insertText('Long');
     await expect(data).toHaveText('{"kind":"Long');
-    await page.goto(
-        './#schema=long%23800000000000001+x%3Auint7+%3D+Long%3B&boc=te6cckEBAQEACwAAEYAAAAAAAAAQcJqaShY%3D',
-    );
+    await openBoc(page, 'long#800000000000001 x:uint7 = Long;', 'te6cckEBAQEACwAAEYAAAAAAAAAQcJqaShY=');
     await data.fill('{"kind":"Long","x":3}');
     await data.press('End');
     await data.press('ArrowLeft');
@@ -372,4 +379,20 @@ test('inspects shared references and BoCs with multiple roots', async ({ page })
     await expect(page.locator('#cell-list li > code')).toHaveText(['x{AA}', 'x{BB}']);
     await expect(page.locator('#cell-list .cell-hash')).toHaveCount(2);
     await expect(page.locator('#boc-error')).toContainText('single root');
+});
+
+test('Data links preserve the editor text and regenerate its BoC', async ({ page }) => {
+    await page.goto('./');
+    const editor = page.locator('#data');
+    await page.locator('#schema').fill('_ x:uint8 = Example;');
+    for (const data of ['{"kind":"Example","x":42}', '{"kind":']) {
+        await editor.fill(data);
+        const boc = await page.locator('#boc').inputValue();
+        expect(Boolean(boc)).toBe(data.endsWith('}'));
+        await page.locator('#share-data').click();
+        await expect(page).toHaveURL(/#share=/);
+        await page.reload();
+        await expect(editor).toHaveText(data);
+        await expect(page.locator('#boc')).toHaveValue(boc);
+    }
 });

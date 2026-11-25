@@ -1,191 +1,106 @@
-import { BitReader, BitString, Cell } from '@ton/core';
+import { Cell } from '@ton/core';
 import { TLBRuntime, unwrap } from '@ton-community/tlb-runtime';
 
-const MAX_CHUNKS = 2048;
-const MAX_SCHEMA_BYTES = 1024 * 1024;
+import { readBocRoots } from './boc';
+import samples from './samples.json';
+import { loadText, storeText } from './snake-text';
 
-export const shareSchema = `bool_false$0 = Bool;
-bool_true$1 = Bool;
-nothing$0 {X:Type} = Maybe X;
-just$1 {X:Type} value:X = Maybe X;
+const shareSchema = samples.find((sample) => sample.id === 'tlb-share')!.schema;
+const runtime = unwrap(TLBRuntime.from(shareSchema, { autoText: false }));
+const MAX_BOC_BYTES = 1024 * 1024;
+const DEFLATE = 'deflate.';
 
-snake_bytes#_ len:(## 10) data:(bits len) next:(Maybe ^SnakeBytes) = SnakeBytes;
-boc_none$00 = BocInput;
-boc_cell$01 cell:^Cell = BocInput;
-boc_raw$10 raw:^SnakeBytes = BocInput;
-share_v1#01 compressed:Bool schema:^SnakeBytes boc:BocInput decode_as:(Maybe ^SnakeBytes) = SharePayload;`;
+export type ShareState =
+    | { mode: 'boc'; schema: string; boc: string; as?: string }
+    | { mode: 'data'; schema: string; data: string; as?: string };
 
-// Decode one snake cell at a time so the 2048-chunk limit is independent of the runtime's recursion limit.
-// ^Cell and ^SnakeBytes both occupy exactly one reference on the wire.
-const runtime = unwrap(TLBRuntime.from(shareSchema.replaceAll('^SnakeBytes', '^Cell'), { autoText: false }));
-
-type MaybeCell = { kind: 'Maybe_just'; value: Cell } | { kind: 'Maybe_nothing' };
-type BocInput =
-    | { kind: 'BocInput_boc_none' }
-    | { kind: 'BocInput_boc_cell'; cell: Cell }
-    | { kind: 'BocInput_boc_raw'; raw: Cell };
-type SharePayload = { kind: 'SharePayload'; compressed: boolean; schema: Cell; boc: BocInput; decode_as: MaybeCell };
-type SnakeBytes = { kind: 'SnakeBytes'; len: number; data: BitString; next: MaybeCell };
-
-function maybeCell(cell: Cell | null): MaybeCell {
-    return cell ? { kind: 'Maybe_just', value: cell } : { kind: 'Maybe_nothing' };
+function encodeBocInput(text: string) {
+    if (!text.trim()) return { kind: 'Boc_boc_none' } as const;
+    try {
+        const roots = readBocRoots(text);
+        if (roots.length === 1) return { kind: 'Boc_boc_cell', cell: roots[0] } as const;
+    } catch {
+        // Preserve unfinished input so the recipient can continue editing it.
+    }
+    return { kind: 'Boc_boc_raw', raw: storeText(text) } as const;
 }
 
-function decodeRecord(cell: Cell, type: 'SnakeBytes'): SnakeBytes;
-function decodeRecord(cell: Cell, type: 'SharePayload'): SharePayload;
-function decodeRecord(cell: Cell, type: 'SnakeBytes' | 'SharePayload') {
+export function encodeShareCell(state: ShareState): Cell {
+    const schema = { kind: 'Schema', raw: storeText(state.schema) };
+    const payload =
+        state.mode === 'boc'
+            ? { kind: 'Either_left', value: encodeBocInput(state.boc) }
+            : { kind: 'Either_right', value: { kind: 'Data', raw: storeText(state.data) } };
+    return runtime.encodeCell({ kind: 'Share', schema, payload });
+}
+
+export function decodeShareCell(cell: Cell): ShareState {
     const slice = cell.beginParse();
-    const record = unwrap(runtime.deserializeByTypeName(type, slice)) as SnakeBytes | SharePayload;
+    const record = unwrap(runtime.deserializeByTypeName('Share', slice)) as {
+        schema: { raw: Cell };
+        payload:
+            | { kind: 'Either_left'; value: ReturnType<typeof encodeBocInput> }
+            | { kind: 'Either_right'; value: { raw: Cell } };
+    };
     slice.endParse();
-    return record;
+    const schema = loadText(record.schema.raw);
+    const { kind, value } = record.payload;
+    if (kind === 'Either_right') return { mode: 'data', schema, data: loadText(value.raw) };
+    let boc = '';
+    if (value.kind === 'Boc_boc_cell') boc = value.cell.toBoc().toString('base64');
+    if (value.kind === 'Boc_boc_raw') boc = loadText(value.raw);
+    return { mode: 'boc', schema, boc };
 }
-
-export interface ShareInput {
-    schema: string;
-    boc: string;
-    decodeAs?: string;
-}
-
-export function readBocRoots(raw: string): Cell[] {
-    const bytes = bocBytes(raw);
-    return bytes ? Cell.fromBoc(bytes) : [];
-}
-
-export async function parseShareHash(hash: string): Promise<ShareInput | undefined> {
-    const raw = hash.startsWith('#') ? hash.slice(1) : hash;
-    const params = new URLSearchParams(raw);
-    if (params.has('tlb')) {
-        try {
-            return await decodeShare(params.get('tlb')!);
-        } catch (error) {
-            // eslint-disable-next-line no-console -- Invalid external links should be visible in the browser console.
-            console.warn('Unable to load shared TL-B link:', error);
-            return undefined;
-        }
-    }
-    if (params.has('schema') && params.has('boc')) return { schema: params.get('schema')!, boc: params.get('boc')! };
-    return undefined;
-}
-
-function storeBytes(bytes: Uint8Array): Cell {
-    const count = Math.max(1, Math.ceil(bytes.length / 126));
-    if (count > MAX_CHUNKS) throw new Error('Share field exceeds 2048 chunks');
-    let next: Cell | null = null;
-    for (let index = count - 1; index >= 0; index--) {
-        const part = bytes.subarray(index * 126, (index + 1) * 126);
-        next = runtime.encodeCell({
-            kind: 'SnakeBytes',
-            len: part.length * 8,
-            data: new BitString(Buffer.from(part), 0, part.length * 8),
-            next: maybeCell(next),
-        });
-    }
-    return next!;
-}
-
-function loadBytes(cell: Cell): Uint8Array {
-    const chunks: Uint8Array[] = [];
-    let current: Cell | null = cell;
-    while (current) {
-        if (chunks.length >= MAX_CHUNKS) throw new Error('Share field exceeds 2048 chunks');
-        const chunk: SnakeBytes = decodeRecord(current, 'SnakeBytes');
-        if (chunk.len > 1008 || chunk.len % 8) throw new Error('Invalid SnakeBytes length');
-        chunks.push(new BitReader(chunk.data).loadBuffer(chunk.len / 8));
-        current = chunk.next.kind === 'Maybe_just' ? chunk.next.value : null;
-    }
-    return Buffer.concat(chunks);
-}
-
-const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
-const encoder = new TextEncoder();
 
 function base64url(bytes: Buffer): string {
     return bytes.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-function bocBytes(value: string): Buffer | undefined {
-    const text = value.replace(/\s/g, '');
-    if (!text) return undefined;
-    if (/^(?:b5ee9c72|68ff65f3|acc3a728)/i.test(text)) {
-        if (text.length % 2 || /[^0-9a-f]/i.test(text)) throw new Error('Invalid BoC hex');
-        return Buffer.from(text, 'hex');
+export async function encodeShareHash(state: ShareState): Promise<string> {
+    const bytes = encodeShareCell(state).toBoc({ idx: false, crc32: false });
+    if (bytes.length > MAX_BOC_BYTES) throw new Error('Share exceeds 1 MiB');
+    let encoded = base64url(bytes);
+    if (typeof CompressionStream !== 'undefined') {
+        try {
+            const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+            const packed = DEFLATE + base64url(Buffer.from(await new Response(stream).arrayBuffer()));
+            if (packed.length < encoded.length) encoded = packed;
+        } catch {
+            // Older browsers may expose CompressionStream without deflate-raw.
+        }
     }
-    const standard = text.replace(/-/g, '+').replace(/_/g, '/');
-    const bytes = Buffer.from(standard, 'base64');
-    const encoded = bytes.toString('base64');
-    if (standard !== encoded && standard !== encoded.replace(/=+$/, '')) throw new Error('Invalid BoC base64');
-    return bytes;
+    return '#share=' + encoded + (state.as ? '&as=' + encodeURIComponent(state.as) : '');
 }
 
-async function compress(bytes: Uint8Array): Promise<Uint8Array | undefined> {
-    if (typeof CompressionStream === 'undefined') return undefined;
+async function inflate(bytes: Buffer) {
+    let size = 0;
+    const limit = new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, controller) {
+            size += chunk.length;
+            if (size > MAX_BOC_BYTES) throw new Error('Share exceeds 1 MiB');
+            controller.enqueue(chunk);
+        },
+    });
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')).pipeThrough(limit);
+    return Buffer.from(await new Response(stream).arrayBuffer());
+}
+
+export async function parseShareHash(hash: string): Promise<ShareState | undefined> {
+    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const value = params.get('share');
+    if (!value) return undefined;
     try {
-        const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
-        const compressed = new Uint8Array(await new Response(stream).arrayBuffer());
-        return compressed.length < bytes.length ? compressed : undefined;
-    } catch {
+        const compressed = value.startsWith(DEFLATE);
+        const encoded = compressed ? value.slice(DEFLATE.length) : value;
+        if (encoded.length > Math.ceil((MAX_BOC_BYTES * 4) / 3)) throw new Error('Share exceeds 1 MiB');
+        const bytes = Buffer.from(encoded, 'base64');
+        if (!encoded || base64url(bytes) !== encoded) throw new Error('Invalid share base64url');
+        const roots = Cell.fromBoc(compressed ? await inflate(bytes) : bytes);
+        if (roots.length !== 1) throw new Error('Share must have one root');
+        return { ...decodeShareCell(roots[0]), as: params.get('as') || undefined };
+    } catch (error) {
+        // eslint-disable-next-line no-console -- Invalid external links should be visible in the browser console.
+        console.warn('Unable to load shared TL-B link:', error);
         return undefined;
     }
-}
-
-function encodeBocInput(text: string): BocInput {
-    if (!text.trim()) return { kind: 'BocInput_boc_none' };
-    try {
-        const roots = readBocRoots(text);
-        if (roots.length === 1) return { kind: 'BocInput_boc_cell', cell: roots[0] };
-    } catch {
-        // Preserve unfinished input so the recipient can continue editing it.
-    }
-    return { kind: 'BocInput_boc_raw', raw: storeBytes(encoder.encode(text)) };
-}
-
-export async function encodeShare(input: ShareInput): Promise<string> {
-    const rawSchema = encoder.encode(input.schema);
-    if (rawSchema.length > MAX_SCHEMA_BYTES) throw new Error('Schema exceeds 1 MiB');
-    const packed = await compress(rawSchema);
-    const schema = storeBytes(packed ?? rawSchema);
-    const record: SharePayload = {
-        kind: 'SharePayload',
-        compressed: !!packed,
-        schema,
-        boc: encodeBocInput(input.boc),
-        decode_as: maybeCell(input.decodeAs?.trim() ? storeBytes(encoder.encode(input.decodeAs)) : null),
-    };
-    const boc = runtime.encodeCell(record).toBoc({ idx: false, crc32: false });
-    return base64url(boc);
-}
-
-async function decompress(bytes: Uint8Array): Promise<Uint8Array> {
-    if (typeof DecompressionStream === 'undefined') throw new Error('Deflate decompression is unavailable');
-    const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
-    const parts: Uint8Array[] = [];
-    let size = 0;
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        size += value.length;
-        if (size > MAX_SCHEMA_BYTES) {
-            await reader.cancel();
-            throw new Error('Schema exceeds 1 MiB');
-        }
-        parts.push(value);
-    }
-    return Buffer.concat(parts, size);
-}
-
-export async function decodeShare(encoded: string): Promise<ShareInput> {
-    if (!/^[A-Za-z0-9_-]+$/.test(encoded)) throw new Error('Invalid share base64url');
-    const bytes = Buffer.from(encoded, 'base64');
-    if (base64url(bytes) !== encoded) throw new Error('Invalid share base64url');
-    const roots = Cell.fromBoc(bytes);
-    if (roots.length !== 1) throw new Error('Share must have one root');
-    const record = decodeRecord(roots[0], 'SharePayload');
-    const schemaBytes = loadBytes(record.schema);
-    const schema = decoder.decode(record.compressed ? await decompress(schemaBytes) : schemaBytes);
-    let boc = '';
-    if (record.boc.kind === 'BocInput_boc_cell') boc = record.boc.cell.toBoc().toString('base64');
-    if (record.boc.kind === 'BocInput_boc_raw') boc = decoder.decode(loadBytes(record.boc.raw));
-    const decodeAs =
-        record.decode_as.kind === 'Maybe_just' ? decoder.decode(loadBytes(record.decode_as.value)) : undefined;
-    return { schema, boc, decodeAs };
 }

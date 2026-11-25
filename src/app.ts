@@ -4,7 +4,7 @@ import catalog from './samples.json';
 import { CellProcessor, defaultBoc, defaultSchema, Focus, TLBData } from './cell-processor';
 import { CodeEditor } from './editor/code-editor';
 import { CellInspector } from './cell-inspector';
-import { encodeShare, parseShareHash } from './share-format';
+import { encodeShareHash, parseShareHash } from './share-format';
 
 interface Sample {
     id?: string;
@@ -97,7 +97,7 @@ export class App {
         const index = samples.findIndex((entry) => sampleId(entry) === fragment);
         const sample = samples[index];
         const schema = shared?.schema ?? sample?.schema ?? defaultSchema;
-        const boc = shared?.boc ?? sample?.boc ?? defaultBoc;
+        const boc = shared ? (shared.mode === 'boc' ? shared.boc : '') : (sample?.boc ?? defaultBoc);
         this.samplePicker.value = sample ? String(index) : '';
         this.sampleSource.hidden = !sample?.documentation;
         if (sample?.documentation) {
@@ -125,28 +125,42 @@ export class App {
         this.bocField.value = boc;
         this.inspector.update(boc);
         this.refreshRootInput();
+        if (shared?.mode === 'data') {
+            this.handleDataChange(shared.data);
+            if (this.bocField.value && shared.as) {
+                this.processor.updateBoc(this.bocField.value);
+                this.refreshRootInput();
+            }
+            this.inspector.update(this.bocField.value);
+        }
         const choice = this.processor.choices.findIndex((entry) =>
-            shared?.decodeAs ? entry.label === shared.decodeAs : entry.kind === sample?.kind && entry.value,
+            shared?.as ? entry.label === shared.as : entry.kind === sample?.kind && entry.value,
         );
         if (choice >= 0) {
             this.rootSelect.value = String(choice);
             this.showChoice();
         }
+        if (shared?.mode === 'data') this.dataField.value = shared.data;
     }
 
-    private async share() {
+    private async share(mode: 'boc' | 'data') {
         this.clearShareFeedback();
         const revision = ++this.fragmentRevision;
         const status = document.querySelector<HTMLElement>('#share-status')!;
+        const section = document.querySelector(mode === 'boc' ? '.boc-field' : '.data-field')!;
+        section.querySelector('.label-row')!.after(status, document.querySelector('#share-link')!);
         const url = new URL(window.location.href);
         url.search = '';
         const selected = this.rootSelect.value;
-        const link = encodeShare({
+        const link = encodeShareHash({
             schema: this.schemaField.value,
-            boc: this.bocField.value,
-            decodeAs: selected ? this.processor.choices[Number(selected)]?.label : undefined,
+            ...(mode === 'boc' ? { mode, boc: this.bocField.value } : { mode, data: this.dataField.value }),
+            as:
+                selected && this.processor.choices.length > 1
+                    ? this.processor.choices[Number(selected)]?.label
+                    : undefined,
         }).then((encoded) => {
-            url.hash = 'tlb=' + encoded;
+            url.hash = encoded;
             if (revision === this.fragmentRevision) window.history.replaceState(null, '', url);
             return url.href;
         });
@@ -186,7 +200,8 @@ export class App {
     }
 
     private setupEventListeners() {
-        document.querySelector('#share')!.addEventListener('click', () => this.share());
+        document.querySelector('#share')!.addEventListener('click', () => this.share('boc'));
+        document.querySelector('#share-data')!.addEventListener('click', () => this.share('data'));
         this.rootSelect.addEventListener('change', () => {
             this.beginEdit();
             this.showChoice();

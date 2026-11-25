@@ -236,9 +236,9 @@
     "id": "tlb-share",
     "group": "Usecase",
     "title": "TL-B Share",
-    "schema": "bool_false$0 = Bool;\nbool_true$1 = Bool;\nnothing$0 {X:Type} = Maybe X;\njust$1 {X:Type} value:X = Maybe X;\n\nsnake_bytes#_ len:(## 10) data:(bits len) next:(Maybe ^SnakeBytes) = SnakeBytes;\nboc_none$00 = BocInput;\nboc_cell$01 cell:^Cell = BocInput;\nboc_raw$10 raw:^SnakeBytes = BocInput;\nshare_v1#01 compressed:Bool schema:^SnakeBytes boc:BocInput decode_as:(Maybe ^SnakeBytes) = SharePayload;",
-    "boc": "te6ccgEBAwEAJQACAwEoAQIAMzAXyB2YWx1ZTp1aW50OCA9IEV4YW1wbGU7QAAIq",
-    "kind": "SharePayload",
+    "schema": "left$0 {X:Type} {Y:Type} value:X = Either X Y;\nright$1 {X:Type} {Y:Type} value:Y = Either X Y;\n\nschema_text$01 raw:^Cell = Schema;\ndata_json$01 raw:^Cell = Data;\nboc_none$00 = Boc;\nboc_cell$01 cell:^Cell = Boc;\nboc_raw$10 raw:^Cell = Boc;\n\nshare_v1#01 schema:Schema payload:(Either Boc Data) = Share;",
+    "boc": "te6cckEBAwEAIwACAwFMAQIAMF8gdmFsdWU6dWludDggPSBFeGFtcGxlOwACKk+RtI4=",
+    "kind": "Share",
     "documentation": "https://github.com/ilyar/sample-tlb/blob/main/src/share-format.ts",
     "documentationTitle": "View the TL-B Share implementation on GitHub"
   }
