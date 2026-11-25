@@ -1,6 +1,6 @@
 # TL-B Runtime Sample
 
-The demo uses a bundled build of `@ton-community/tlb-runtime`. The archive name in [package.json](package.json) includes the runtime commit.
+The demo installs `@ton-community/tlb-runtime` from a GitHub Release in the [runtime fork](https://github.com/ilyar/tlb-runtime/releases). The asset URL in [package.json](package.json) pins the runtime commit.
 
 Paste a BoC to decode it against the schema. A unique match opens automatically. If several types fit the cell, choose one under **Decode as**. When a numeric argument is missing from the wire, the editor asks for that argument. To encode JSON, set its `kind` to the type or constructor name.
 

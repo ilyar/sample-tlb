@@ -1220,15 +1220,15 @@
   dependencies:
     ohm-js "^16.6.0"
 
-"@ton-community/tlb-runtime@file:vendor/tlb-runtime-97ff1db.tgz":
+"@ton-community/tlb-runtime@https://github.com/ilyar/tlb-runtime/releases/download/pr-7-ace9467/tlb-runtime-ace9467.tgz":
   version "1.0.0-alpha.5"
-  resolved "file:vendor/tlb-runtime-97ff1db.tgz#4c8f93c84e37d40821b5a141ea69b06a91d15b1e"
+  resolved "https://github.com/ilyar/tlb-runtime/releases/download/pr-7-ace9467/tlb-runtime-ace9467.tgz#b49426c6c4b52549c73269a12035ec3f1056d538"
   dependencies:
     "@ton-community/tlb-codegen" "2.0.0-beta.3"
     "@ton-community/tlb-parser" "^0.1.5"
     "@ton/core" "^0.63.0"
     "@ton/crypto" "^3.3.0"
-    ohm-js "^17.3.0"
+    tlb-parser-v2 "npm:@ton-community/tlb-parser@^0.2.1"
 
 "@ton/core@^0.61.0":
   version "0.61.0"
@@ -4473,7 +4473,7 @@ ohm-js@^16.6.0:
   resolved "https://registry.yarnpkg.com/ohm-js/-/ohm-js-16.6.0.tgz#a54508b002161b35d4feec2f628d5ab4e07d2f29"
   integrity sha512-X9P4koSGa7swgVQ0gt71UCYtkAQGOjciJPJAz74kDxWt8nXbH5HrDOQG6qBDH7SR40ktNv4x61BwpTDE9q4lRA==
 
-ohm-js@^17.3.0:
+ohm-js@^v17.3.0:
   version "17.5.0"
   resolved "https://registry.yarnpkg.com/ohm-js/-/ohm-js-17.5.0.tgz#7c9c97620e9b7d1e704632497537f3223edbf56c"
   integrity sha512-l4Sa7026+6jsvYbt0PXKmL+f+ML32fD++IznLgxDhx2t9Cx6NC7zwRqblCujPHGGmkQerHoeBzRutdxaw/S72g==
@@ -5465,6 +5465,13 @@ tinyglobby@^0.2.15:
   dependencies:
     fdir "^6.5.0"
     picomatch "^4.0.3"
+
+"tlb-parser-v2@npm:@ton-community/tlb-parser@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@ton-community/tlb-parser/-/tlb-parser-0.2.1.tgz#f2aec012b06e84a5f5c83dd9fe7e35767beb0dfa"
+  integrity sha512-rGzECndrmDmeUNZjec+N734HD1uL5Nl2n+52to4WByqhqHOuGWItR7qsdjgwmxirMCflW6JI/2cbNFziUU4MZw==
+  dependencies:
+    ohm-js "^v17.3.0"
 
 tmpl@1.0.5:
   version "1.0.5"
