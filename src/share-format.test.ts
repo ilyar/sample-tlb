@@ -154,3 +154,18 @@ test('warns and falls back on malformed or oversized payloads even with legacy p
         warn.mockRestore();
     }
 });
+
+test.each(['SharePayload', 'SnakeBytes'])('rejects trailing bits and references in %s', async (type) => {
+    const sample = samples.find((entry) => entry.id === 'tlb-share')!;
+    const root = Cell.fromBase64(sample.boc);
+    const target = type === 'SharePayload' ? root : root.refs[0];
+    for (const extra of ['bit', 'ref']) {
+        const builder = beginCell().storeSlice(target.beginParse());
+        if (extra === 'bit') builder.storeBit(0);
+        else builder.storeRef(Cell.EMPTY);
+        const invalid = builder.endCell();
+        const outer =
+            type === 'SharePayload' ? invalid : new Cell({ bits: root.bits, refs: [invalid, ...root.refs.slice(1)] });
+        await expect(decodeShare(outer.toBoc().toString('base64url'))).rejects.toThrow();
+    }
+});

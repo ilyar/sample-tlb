@@ -34,9 +34,9 @@ function maybeCell(cell: Cell | null): MaybeCell {
 function decodeRecord(cell: Cell, type: 'SnakeBytes'): SnakeBytes;
 function decodeRecord(cell: Cell, type: 'SharePayload'): SharePayload;
 function decodeRecord(cell: Cell, type: 'SnakeBytes' | 'SharePayload') {
-    const record = runtime.decodeCell(cell, { rootType: type }) as SnakeBytes | SharePayload;
-    // Reject trailing bits or extra references accepted by a prefix decode.
-    if (!runtime.encodeCell(record).equals(cell)) throw new Error('Invalid ' + type + ' cell');
+    const slice = cell.beginParse();
+    const record = unwrap(runtime.deserializeByTypeName(type, slice)) as SnakeBytes | SharePayload;
+    slice.endParse();
     return record;
 }
 
@@ -93,18 +93,11 @@ function loadBytes(cell: Cell): Uint8Array {
         chunks.push(new BitReader(chunk.data).loadBuffer(chunk.len / 8));
         current = chunk.next.kind === 'Maybe_just' ? chunk.next.value : null;
     }
-    const result = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
-    let offset = 0;
-    for (const chunk of chunks) {
-        result.set(chunk, offset);
-        offset += chunk.length;
-    }
-    return result;
+    return Buffer.concat(chunks);
 }
 
-function utf8(bytes: Uint8Array): string {
-    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
-}
+const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+const encoder = new TextEncoder();
 
 function base64url(bytes: Buffer): string {
     return bytes.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -135,30 +128,28 @@ async function compress(bytes: Uint8Array): Promise<Uint8Array | undefined> {
     }
 }
 
+function encodeBocInput(text: string): BocInput {
+    if (!text.trim()) return { kind: 'BocInput_boc_none' };
+    try {
+        const roots = readBocRoots(text);
+        if (roots.length === 1) return { kind: 'BocInput_boc_cell', cell: roots[0] };
+    } catch {
+        // Preserve unfinished input so the recipient can continue editing it.
+    }
+    return { kind: 'BocInput_boc_raw', raw: storeBytes(encoder.encode(text)) };
+}
+
 export async function encodeShare(input: ShareInput): Promise<string> {
-    const rawSchema = new TextEncoder().encode(input.schema);
+    const rawSchema = encoder.encode(input.schema);
     if (rawSchema.length > MAX_SCHEMA_BYTES) throw new Error('Schema exceeds 1 MiB');
     const packed = await compress(rawSchema);
     const schema = storeBytes(packed ?? rawSchema);
-    let bocInput: BocInput = { kind: 'BocInput_boc_none' };
-    if (input.boc.trim()) {
-        let cell: Cell | undefined;
-        try {
-            const roots = readBocRoots(input.boc);
-            if (roots.length === 1) cell = roots[0];
-        } catch {
-            // Keep incomplete input verbatim so the recipient can continue editing.
-        }
-        bocInput = cell
-            ? { kind: 'BocInput_boc_cell', cell }
-            : { kind: 'BocInput_boc_raw', raw: storeBytes(new TextEncoder().encode(input.boc)) };
-    }
     const record: SharePayload = {
         kind: 'SharePayload',
         compressed: !!packed,
         schema,
-        boc: bocInput,
-        decode_as: maybeCell(input.decodeAs?.trim() ? storeBytes(new TextEncoder().encode(input.decodeAs)) : null),
+        boc: encodeBocInput(input.boc),
+        decode_as: maybeCell(input.decodeAs?.trim() ? storeBytes(encoder.encode(input.decodeAs)) : null),
     };
     const boc = runtime.encodeCell(record).toBoc({ idx: false, crc32: false });
     return base64url(boc);
@@ -179,28 +170,22 @@ async function decompress(bytes: Uint8Array): Promise<Uint8Array> {
         }
         parts.push(value);
     }
-    const result = new Uint8Array(size);
-    let offset = 0;
-    for (const part of parts) {
-        result.set(part, offset);
-        offset += part.length;
-    }
-    return result;
+    return Buffer.concat(parts, size);
 }
 
 export async function decodeShare(encoded: string): Promise<ShareInput> {
     if (!/^[A-Za-z0-9_-]+$/.test(encoded)) throw new Error('Invalid share base64url');
-    const standard = encoded.replace(/-/g, '+').replace(/_/g, '/');
-    const bytes = Buffer.from(standard + '='.repeat((4 - (standard.length % 4)) % 4), 'base64');
+    const bytes = Buffer.from(encoded, 'base64');
     if (base64url(bytes) !== encoded) throw new Error('Invalid share base64url');
     const roots = Cell.fromBoc(bytes);
     if (roots.length !== 1) throw new Error('Share must have one root');
     const record = decodeRecord(roots[0], 'SharePayload');
     const schemaBytes = loadBytes(record.schema);
-    const schema = utf8(record.compressed ? await decompress(schemaBytes) : schemaBytes);
+    const schema = decoder.decode(record.compressed ? await decompress(schemaBytes) : schemaBytes);
     let boc = '';
     if (record.boc.kind === 'BocInput_boc_cell') boc = record.boc.cell.toBoc().toString('base64');
-    if (record.boc.kind === 'BocInput_boc_raw') boc = utf8(loadBytes(record.boc.raw));
-    const decodeAs = record.decode_as.kind === 'Maybe_just' ? utf8(loadBytes(record.decode_as.value)) : undefined;
+    if (record.boc.kind === 'BocInput_boc_raw') boc = decoder.decode(loadBytes(record.boc.raw));
+    const decodeAs =
+        record.decode_as.kind === 'Maybe_just' ? decoder.decode(loadBytes(record.decode_as.value)) : undefined;
     return { schema, boc, decodeAs };
 }
