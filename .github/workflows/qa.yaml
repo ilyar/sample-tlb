@@ -1,27 +1,16 @@
 name: QA
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: workflow_call
 
 jobs:
-  lint:
-    name: Lint
+  qa:
     runs-on: ubuntu-latest
     steps:
-      - uses: the-ton-tech/toolchain/lint@v1
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22.x
-
-  build:
-    name: Test & Build
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: the-ton-tech/toolchain/build@v1
-        with:
-          node-version: 22.x
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+      - run: yarn test --runInBand
