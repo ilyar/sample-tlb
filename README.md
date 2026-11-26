@@ -13,6 +13,8 @@ Share copies the schema and the contents of the selected editor, including unfin
 
 Inspect a prepared link payload in the [TL-B Share example](https://ilyar.github.io/sample-tlb/#tlb-share) or read its [schema and implementation](src/share/)
 
+Example generate type declarations by schema [scripts/type-by-schema.mjs](scripts/type-by-schema.mjs)
+
 ## Local development
 
 ```bash

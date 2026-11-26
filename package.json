@@ -7,6 +7,7 @@
   "type": "module",
   "prettier": "@ton/toolchain/prettier",
   "scripts": {
+    "gen:type": "node scripts/type-by-schema.mjs src/share/share.tlb",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --max-warnings 0 --fix",
     "test": "jest --config jest.config.ts",
