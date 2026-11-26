@@ -1,15 +1,18 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const headless = true;
+const port = 4173;
+const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
     testDir: './e2e',
     fullyParallel: true,
+    workers: process.env.CI ? 2 : 4,
     forbidOnly: !!headless,
     retries: headless ? 2 : 0,
     reporter: headless ? 'dot' : 'html',
     use: {
-        baseURL: 'http://localhost:5173',
+        baseURL,
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
         headless,
@@ -40,9 +43,9 @@ export default defineConfig({
     ],
 
     webServer: {
-        command: 'yarn dev',
-        url: 'http://localhost:5173',
-        reuseExistingServer: true,
+        command: `node_modules/.bin/vite --host 127.0.0.1 --port ${port} --strictPort`,
+        url: baseURL,
+        reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
     },
 

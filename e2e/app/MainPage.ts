@@ -48,7 +48,7 @@ export class MainPage extends BasePage {
     }
 
     async getSchemaValue(): Promise<string> {
-        return (await this.schemaField.locator('.cm-placeholder').count()) ? '' : this.schemaField.innerText();
+        return this.getEditorValue(this.schemaField);
     }
 
     async getBocValue(): Promise<string> {
@@ -56,7 +56,12 @@ export class MainPage extends BasePage {
     }
 
     async getDataValue(): Promise<string> {
-        return (await this.dataField.locator('.cm-placeholder').count()) ? '' : this.dataField.innerText();
+        return this.getEditorValue(this.dataField);
+    }
+
+    private async getEditorValue(editor: Locator): Promise<string> {
+        if (await editor.locator('.cm-placeholder').count()) return '';
+        return (await editor.locator('.cm-line').allTextContents()).join('\n');
     }
 
     // Методы для валидации

@@ -236,10 +236,24 @@
     "id": "tlb-share",
     "group": "Usecase",
     "title": "TL-B Share",
-    "schema": "left$0 {X:Type} {Y:Type} value:X = Either X Y;\nright$1 {X:Type} {Y:Type} value:Y = Either X Y;\n\nschema_text$01 raw:^Cell = Schema;\ndata_json$01 raw:^Cell = Data;\nboc_none$00 = Boc;\nboc_cell$01 cell:^Cell = Boc;\nboc_raw$10 raw:^Cell = Boc;\n\nshare_v1#01 schema:Schema payload:(Either Boc Data) = Share;",
-    "boc": "te6cckEBAwEAIwACAwFMAQIAMF8gdmFsdWU6dWludDggPSBFeGFtcGxlOwACKk+RtI4=",
+    "schema": "text$01 data:^SnakeString = Schema;\njson$01 data:^SnakeString = Data;\ncell$01 data:^Cell = Boc;\nhex$10 data:^SnakeString = Boc;\nnone$00 = Payload;\nboc$01 value:Boc = Payload;\ndata$10 value:Data = Payload;\nshare_v1#01 schema:Schema payload:Payload = Share;",
+    "boc": "te6ccgEBAwEAPwACAwFmAQIAMF8gdmFsdWU6dWludDggPSBFeGFtcGxlOwA6eyJraW5kIjoiRXhhbXBsZSIsInZhbHVlIjo0Mn0=",
     "kind": "Share",
-    "documentation": "https://github.com/ilyar/sample-tlb/blob/main/src/share-format.ts",
+    "documentation": "https://github.com/ilyar/sample-tlb/blob/main/src/share/share.ts",
     "documentationTitle": "View the TL-B Share implementation on GitHub"
+  },
+  {
+    "title": "Inline SnakeString",
+    "group": "Usecase",
+    "schema": "text_comment#00000000 text:SnakeString = Comment;",
+    "boc": "te6cckEBAgEAmwAB/gAAAABUT04gZGF0YSBhcmUgREFHIENlbGwgQmFncyBlYWNoIENlbGwgaG9sZHMgdXAgdG8gMTAyMyBiaXRzIGFuZCA0IHJlZnMgc2VyaWFsaXplZCBieSBUTEIgYW5kIHNoYTI1NiBoYXNoZWQgdG8gdHJhbnNwYXJlbnQgYW4BAC5kIHJlcHJlc2VudGF0aW9uIGhhc2hlc0dMobI=",
+    "kind": "Comment"
+  },
+  {
+    "title": "Referenced SnakeString",
+    "group": "Usecase",
+    "schema": "text_comment#00000000 text:^SnakeString = Comment;",
+    "boc": "te6cckEBAwEAngABCAAAAAABAf5UT04gZGF0YSBhcmUgREFHIENlbGwgQmFncyBlYWNoIENlbGwgaG9sZHMgdXAgdG8gMTAyMyBiaXRzIGFuZCA0IHJlZnMgc2VyaWFsaXplZCBieSBUTEIgYW5kIHNoYTI1NiBoYXNoZWQgdG8gdHJhbnNwYXJlbnQgYW5kIHJlAgAmcHJlc2VudGF0aW9uIGhhc2hlc8YaSbY=",
+    "kind": "Comment"
   }
 ]

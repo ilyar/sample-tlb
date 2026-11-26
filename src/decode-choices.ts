@@ -5,7 +5,7 @@ export interface DecodeChoice {
     label: string;
     root: string;
     args: (number | string)[];
-    kind: string;
+    resolvedArgs?: number[];
     value?: TypedCell;
 }
 
@@ -35,7 +35,7 @@ function inputArgs(c: TLBConstructor): (string | number)[] {
 
 export function withArguments(runtime: TLBRuntime, cell: Cell, choice: DecodeChoice, args: number[]) {
     const decoded = runtime.decodeCell(cell, { rootType: choice.root, args });
-    if (decoded.kind !== choice.kind || !runtime.encodeCell(decoded).equals(cell)) {
+    if (!runtime.encodeCell(decoded).equals(cell)) {
         throw new Error('The arguments do not match this cell');
     }
     return decoded;
@@ -57,7 +57,6 @@ function leavesTrailingData(encoded: Cell, wire: Cell): boolean {
 export function decodeChoices(runtime: TLBRuntime, cell: Cell): DecodeChoice[] {
     const choices: DecodeChoice[] = [];
     const pending: DecodeChoice[] = [];
-    const tagged: DecodeChoice[] = [];
     for (const type of runtime.getTypes().values()) {
         const slice = cell.beginParse();
         const constructors = type.constructors.filter(
@@ -89,22 +88,25 @@ export function decodeChoices(runtime: TLBRuntime, cell: Cell): DecodeChoice[] {
         }
         for (const c of constructors) {
             if (c.parameters.some((p) => p.variable.type === 'Type')) continue;
-            const kind = type.constructors.length === 1 ? type.name : type.name + '_' + c.name;
             const args = inputArgs(c);
-            const choice: DecodeChoice = { label: [type.name, ...args].join(' '), root: type.name, args, kind };
+            const choice: DecodeChoice = { label: [type.name, ...args].join(' '), root: type.name, args };
             if (args.length && args.every((arg): arg is number => typeof arg === 'number')) {
                 try {
                     choice.value = withArguments(runtime, cell, choice, args);
+                    choice.resolvedArgs = args;
                 } catch {
                     continue;
                 }
             } else if (
-                complete?.kind === kind &&
+                complete &&
                 args.every(
                     (arg, i) => typeof arg === 'number' || typeof complete[c.parameters[i].variable.name] === 'number',
                 )
             ) {
                 choice.value = complete;
+                choice.resolvedArgs = args.map((arg, i) =>
+                    typeof arg === 'number' ? arg : Number(complete[c.parameters[i].variable.name]),
+                );
             } else if (args.some((arg) => typeof arg === 'string')) {
                 const fields = c.fields.filter((f) => !f.implicit);
                 const field = fields.length === 1 ? fields[0].fieldType : undefined;
@@ -115,32 +117,25 @@ export function decodeChoices(runtime: TLBRuntime, cell: Cell): DecodeChoice[] {
                     field.bits.x === args[0]
                 ) {
                     try {
-                        choice.value = withArguments(runtime, cell, choice, [cell.bits.length - c.tag.bitLen]);
+                        choice.resolvedArgs = [cell.bits.length - c.tag.bitLen];
+                        choice.value = withArguments(runtime, cell, choice, choice.resolvedArgs);
                     } catch {
                         continue;
                     }
-                } else if (
-                    plain.success
-                        ? !complete || complete.kind !== kind
-                        : !/variable|parameter|argument/i.test(plain.error.message)
-                )
+                } else if (plain.success ? !complete : !/variable|parameter|argument/i.test(plain.error.message))
                     continue;
             } else continue;
             if (!choice.value && !complete) {
                 pending.push(choice);
                 continue;
             }
+            if (
+                choices.some(
+                    (existing) => existing.label === choice.label && existing.value?.kind === choice.value?.kind,
+                )
+            )
+                continue;
             choices.push(choice);
-            if (c.tag.bitLen) tagged.push(choice);
-        }
-    }
-    // A tag can belong to a nested field of a tagless root (e.g. the Unary sample).
-    if (choices.length > 1 && tagged.length === 1 && tagged[0].value) {
-        try {
-            const inferred = runtime.decodeCell(cell);
-            if (inferred.kind === tagged[0].kind) return tagged;
-        } catch {
-            // Keep the validated choices if the runtime cannot infer the root.
         }
     }
     return choices.length ? choices : pending;

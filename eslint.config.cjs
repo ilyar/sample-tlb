@@ -3,6 +3,11 @@ const base = require('@ton/toolchain');
 module.exports = [
     ...base,
     {
+        // Keep the checked-in example identical to runtime.toTypeScript().
+        files: ['src/share/share.d.ts'],
+        rules: { 'prettier/prettier': 'off' },
+    },
+    {
         files: ['*/*debug*.ts'],
         rules: {
             'no-console': 'off',

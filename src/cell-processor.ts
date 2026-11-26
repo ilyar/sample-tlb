@@ -64,9 +64,12 @@ export class CellProcessor {
     private bocFormat: DataFormat = DataFormat.base64;
     private boc: string = '';
     choices: DecodeChoice[] = [];
+    defaultChoice = -1;
     private cell?: Cell;
     private data: string = '{}';
     private runtime: TLBRuntime = unwrap(TLBRuntime.from(''));
+
+    compiled: Result<TLBRuntime> = { success: true, value: this.runtime };
 
     constructor(schema: string, boc?: string, data?: string) {
         this.updateSchema(schema);
@@ -98,16 +101,16 @@ export class CellProcessor {
 
     public updateSchema(newSchema: string, focus: Focus = Focus.boc): Result<TLBData> {
         this.choices = [];
+        this.defaultChoice = -1;
         if (!newSchema || newSchema.trim() === '') {
-            return {
-                success: false,
-                error: new Error('Schema cannot be empty'),
-            };
+            this.compiled = { success: false, error: new Error('Schema cannot be empty') };
+            return this.compiled;
         }
 
         newSchema = newSchema.replace('block.tlb', blockSchema);
 
         if (this.runtime.schema === newSchema) {
+            this.compiled = { success: true, value: this.runtime };
             return {
                 success: true,
                 value: this.state,
@@ -115,6 +118,7 @@ export class CellProcessor {
         }
 
         const result = this.runtime.changeSchema(newSchema);
+        this.compiled = result;
         if (!result.success) {
             return result;
         }
@@ -141,6 +145,7 @@ export class CellProcessor {
 
     public updateBoc(newBoc: string): Result<TLBData> {
         this.choices = [];
+        this.defaultChoice = -1;
         this.cell = undefined;
         if (!newBoc || newBoc.trim() === '') {
             this.boc = '';
@@ -158,7 +163,9 @@ export class CellProcessor {
             this.cell = roots[0];
             this.choices = decodeChoices(this.runtime, this.cell);
             if (!this.choices.length) throw new Error('No type in the schema matches the complete cell');
-            if (this.choices.length === 1 && this.choices[0].value) return this.selectChoice(0);
+            this.defaultChoice = this.choices.findIndex((choice) => choice.root === this.runtime.lastTypeName);
+            if (this.defaultChoice < 0) this.defaultChoice = this.choices.length - 1;
+            if (this.choices[this.defaultChoice].value) return this.selectChoice(this.defaultChoice);
             this.data = '';
         } catch (error) {
             return {
@@ -174,19 +181,12 @@ export class CellProcessor {
 
     public updateData(newData: string): Result<TLBData> {
         this.choices = [];
+        this.defaultChoice = -1;
         this.data = newData.trim();
         try {
             const data = JSON.parse(this.data, readValue);
             if (!data || typeof data.kind !== 'string' || !data.kind)
                 throw new Error('Data must include a kind from the schema');
-            const knownKind = [...this.runtime.getTypes().values()].some((type) =>
-                type.constructors.some(
-                    (c) =>
-                        c.declaration &&
-                        data.kind === (type.constructors.length === 1 ? type.name : type.name + '_' + c.name),
-                ),
-            );
-            if (!knownKind) throw new Error('Unknown kind in this schema: ' + data.kind);
             const encoded = this.runtime.encodeCell(data).toBoc();
             switch (this.bocFormat) {
                 case DataFormat.hex:

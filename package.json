@@ -24,6 +24,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/commands": "^6.11.1",
     "@codemirror/lang-json": "^6.0.2",
     "@codemirror/language": "^6.13.1",
@@ -34,12 +35,13 @@
     "@lezer/lr": "^1.4.12",
     "@playwright/test": "^1.54.2",
     "@resvg/resvg-js": "^2.6.2",
-    "@ton-community/tlb-runtime": "https://github.com/ilyar/tlb-runtime/releases/download/pr-7-ace9467/tlb-runtime-ace9467.tgz",
+    "@ton-community/tlb-runtime": "https://github.com/ilyar/tlb-runtime/releases/download/pr-7-3f32ec5/tlb-runtime-3f32ec5.tgz",
     "@ton/core": "^0.63.0",
     "@ton/toolchain": "the-ton-tech/toolchain#v1",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.3.0",
     "gh-pages": "^6.3.0",
+    "highlight.js": "^11.11.1",
     "jest": "^30.0.5",
     "rollup-plugin-visualizer": "^6.0.5",
     "terser": "^5.46.0",
@@ -47,7 +49,8 @@
     "ts-node": "^10.9.2",
     "typescript": "~5.8.3",
     "vite": "^7.1.2",
-    "vite-plugin-node-polyfills": "^0.24.0"
+    "vite-plugin-node-polyfills": "^0.24.0",
+    "vscode-json-languageservice": "^6.0.0-next.3"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

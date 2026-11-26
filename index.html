@@ -68,6 +68,23 @@
               </div>
               <span id="data-error" class="field-error" aria-live="polite"></span>
               <div class="editor-host" id="data-editor"></div>
+              <details id="type-panel">
+                <summary>Export types</summary>
+                <div class="label-row">
+                  <select id="type-format" aria-label="Type export format">
+                    <option value="json">JSON Schema</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="tolk">Tolk</option>
+                    <option value="python">Python</option>
+                    <option value="go">Go</option>
+                    <option value="kotlin">Kotlin</option>
+                    <option value="cpp">C++</option>
+                  </select>
+                  <button id="copy-types" type="button" disabled>Copy</button>
+                </div>
+                <span id="type-error" class="field-error" role="status"></span>
+                <pre id="type-output" tabindex="0" role="region" aria-label="Export output"><code></code></pre>
+              </details>
             </div>
           </div>
         </div>

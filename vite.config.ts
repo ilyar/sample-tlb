@@ -21,12 +21,20 @@ export default {
         global: 'globalThis',
     },
     resolve: {
+        dedupe: ['@codemirror/view', '@codemirror/state', '@codemirror/language'],
         alias: {
             buffer: 'buffer',
         },
     },
     optimizeDeps: {
-        include: ['buffer'],
+        include: [
+            'buffer',
+            '@ton-community/tlb-runtime/type-export.js',
+            '@ton-community/tlb-runtime/dist/type-graph',
+            'vscode-json-languageservice',
+            'highlight.js/lib/core',
+            ...['go', 'json', 'kotlin', 'python', 'typescript'].map((lang) => 'highlight.js/lib/languages/' + lang),
+        ],
     },
     build: {
         target: 'esnext',

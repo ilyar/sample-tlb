@@ -1,10 +1,11 @@
-import { Result } from '@ton-community/tlb-runtime';
+import type { CompletionContext, CompletionSource } from '@codemirror/autocomplete';
+import { Result, type TLBRuntime, type TypeExportOptions } from '@ton-community/tlb-runtime';
 
 import catalog from './samples.json';
 import { CellProcessor, defaultBoc, defaultSchema, Focus, TLBData } from './cell-processor';
 import { CodeEditor } from './editor/code-editor';
 import { CellInspector } from './cell-inspector';
-import { encodeShareHash, parseShareHash } from './share-format';
+import { bocPayload, decodeShareState, encodeShareState, payloadText } from './share/share';
 
 interface Sample {
     id?: string;
@@ -38,11 +39,15 @@ export class App {
         this.handleSchemaChange(value);
         this.inspector.update(this.bocField.value);
     });
-    private readonly dataField = new CodeEditor('data', (value) => {
-        this.beginEdit();
-        this.handleDataChange(value);
-        this.inspector.update(this.bocField.value);
-    });
+    private readonly dataField = new CodeEditor(
+        'data',
+        (value) => {
+            this.beginEdit();
+            this.handleDataChange(value);
+            this.inspector.update(this.bocField.value);
+        },
+        (context) => this.completeData(context),
+    );
     private readonly bocField = document.querySelector<HTMLTextAreaElement>('#boc')!;
     private readonly inspector = new CellInspector();
     private focus = Focus.boc;
@@ -50,6 +55,75 @@ export class App {
     private fragmentRevision = 0;
     private readonly rootSelect = document.querySelector<HTMLSelectElement>('#root-type')!;
     private readonly argumentsBox = document.querySelector<HTMLElement>('#root-arguments')!;
+
+    private readonly typePanel = document.querySelector<HTMLDetailsElement>('#type-panel')!;
+    private readonly typeFormat = document.querySelector<HTMLSelectElement>('#type-format')!;
+    private readonly typeOutput = document.querySelector<HTMLElement>('#type-output code')!;
+    private readonly typeError = document.querySelector<HTMLElement>('#type-error')!;
+    private readonly copyTypes = document.querySelector<HTMLButtonElement>('#copy-types')!;
+    private typeOptions: TypeExportOptions = {};
+    private typeRevision = 0;
+
+    private completionCache?: { runtime: TLBRuntime; options: TypeExportOptions; source: CompletionSource };
+
+    private async completeData(context: CompletionContext) {
+        const compiled = this.processor.compiled;
+        if (!compiled.success) return null;
+        const runtime = compiled.value;
+        const options = this.typeOptions;
+        try {
+            if (this.completionCache?.runtime !== runtime || this.completionCache.options !== options) {
+                const { dataCompletions } = await import('./editor/data-completion');
+                if (context.aborted || this.processor.compiled !== compiled || this.typeOptions !== options)
+                    return null;
+                this.completionCache = {
+                    runtime,
+                    options,
+                    source: dataCompletions(runtime, {
+                        rootType: runtime.lastTypeName,
+                        ...options,
+                    }),
+                };
+            }
+            return await this.completionCache.source(context);
+        } catch {
+            // A partially specified root may not have an exportable schema yet.
+            return null;
+        }
+    }
+
+    private async refreshTypes() {
+        const revision = ++this.typeRevision;
+        this.typeOutput.textContent = '';
+        this.typeError.textContent = '';
+        this.copyTypes.disabled = true;
+        this.copyTypes.textContent = 'Copy';
+        if (!this.typePanel.open) return;
+        if (this.typeFormat.value === 'cpp') {
+            this.typeOutput.textContent =
+                'Use `tlbc -o schema-auto -n schema::gen -z schema.tlb` from https://github.com/ton-blockchain/ton/releases\n' +
+                'for example https://github.com/ton-blockchain/ton/releases/download/v2026.11/ton-<OS>-<ARCH>.zip';
+            this.copyTypes.disabled = false;
+            return;
+        }
+        try {
+            const compiled = this.processor.compiled;
+            if (!compiled.success) throw compiled.error;
+            const [{ exportTypes }, { highlightExport }] = await Promise.all([
+                import('./type-export'),
+                import('./editor/export-highlight'),
+            ]);
+            if (revision !== this.typeRevision) return;
+            const options = { rootType: compiled.value.lastTypeName, ...this.typeOptions };
+            const format = this.typeFormat.value;
+            const source = exportTypes(compiled.value, format, options);
+            this.typeOutput.innerHTML = highlightExport(source, format);
+            this.copyTypes.disabled = false;
+        } catch (error) {
+            if (revision === this.typeRevision)
+                this.typeError.textContent = error instanceof Error ? error.message : String(error);
+        }
+    }
 
     constructor() {
         this.processor = CellProcessor.default;
@@ -92,12 +166,14 @@ export class App {
         const revision = ++this.fragmentRevision;
         this.clearShareFeedback();
         const fragment = window.location.hash.slice(1);
-        const shared = await parseShareHash(fragment);
+        const shared = await decodeShareState(fragment);
         if (revision !== this.fragmentRevision || window.location.hash.slice(1) !== fragment) return;
         const index = samples.findIndex((entry) => sampleId(entry) === fragment);
         const sample = samples[index];
-        const schema = shared?.schema ?? sample?.schema ?? defaultSchema;
-        const boc = shared ? (shared.mode === 'boc' ? shared.boc : '') : (sample?.boc ?? defaultBoc);
+        const schema = shared?.schema.data ?? sample?.schema ?? defaultSchema;
+        const content = shared ? payloadText(shared.payload) : '';
+        const isData = shared?.payload.kind === 'Payload_data';
+        const boc = shared ? (isData ? '' : content) : (sample?.boc ?? defaultBoc);
         this.samplePicker.value = sample ? String(index) : '';
         this.sampleSource.hidden = !sample?.documentation;
         if (sample?.documentation) {
@@ -108,6 +184,7 @@ export class App {
             this.sampleSource.textContent = '';
         }
 
+        this.typeOptions = {};
         this.focus = Focus.boc;
         this.processor.updateBoc('');
         for (const field of ['schema', 'boc', 'data']) this.hideFieldError(field);
@@ -125,22 +202,16 @@ export class App {
         this.bocField.value = boc;
         this.inspector.update(boc);
         this.refreshRootInput();
-        if (shared?.mode === 'data') {
-            this.handleDataChange(shared.data);
-            if (this.bocField.value && shared.as) {
-                this.processor.updateBoc(this.bocField.value);
-                this.refreshRootInput();
-            }
+        if (isData) {
+            this.handleDataChange(content);
             this.inspector.update(this.bocField.value);
         }
-        const choice = this.processor.choices.findIndex((entry) =>
-            shared?.as ? entry.label === shared.as : entry.kind === sample?.kind && entry.value,
-        );
+        const choice = this.processor.choices.findIndex((entry) => entry.value && entry.value.kind === sample?.kind);
         if (choice >= 0) {
             this.rootSelect.value = String(choice);
             this.showChoice();
         }
-        if (shared?.mode === 'data') this.dataField.value = shared.data;
+        if (isData) this.dataField.value = content;
     }
 
     private async share(mode: 'boc' | 'data') {
@@ -151,14 +222,13 @@ export class App {
         section.querySelector('.label-row')!.after(status, document.querySelector('#share-link')!);
         const url = new URL(window.location.href);
         url.search = '';
-        const selected = this.rootSelect.value;
-        const link = encodeShareHash({
-            schema: this.schemaField.value,
-            ...(mode === 'boc' ? { mode, boc: this.bocField.value } : { mode, data: this.dataField.value }),
-            as:
-                selected && this.processor.choices.length > 1
-                    ? this.processor.choices[Number(selected)]?.label
-                    : undefined,
+        const link = encodeShareState({
+            kind: 'Share',
+            schema: { kind: 'Schema', data: this.schemaField.value },
+            payload:
+                mode === 'boc'
+                    ? bocPayload(this.bocField.value)
+                    : { kind: 'Payload_data', value: { kind: 'Data', data: this.dataField.value } },
         }).then((encoded) => {
             url.hash = encoded;
             if (revision === this.fragmentRevision) window.history.replaceState(null, '', url);
@@ -200,6 +270,19 @@ export class App {
     }
 
     private setupEventListeners() {
+        this.typePanel.addEventListener('toggle', () => void this.refreshTypes());
+        this.typeFormat.addEventListener('change', () => void this.refreshTypes());
+        this.copyTypes.addEventListener('click', async () => {
+            const revision = this.typeRevision;
+            try {
+                await navigator.clipboard.writeText(this.typeOutput.textContent ?? '');
+                if (revision === this.typeRevision) this.copyTypes.textContent = 'Copied';
+            } catch {
+                if (revision !== this.typeRevision) return;
+                window.getSelection()?.selectAllChildren(this.typeOutput);
+                this.typeError.textContent = 'Copy the selected text.';
+            }
+        });
         document.querySelector('#share')!.addEventListener('click', () => this.share('boc'));
         document.querySelector('#share-data')!.addEventListener('click', () => this.share('data'));
         this.rootSelect.addEventListener('change', () => {
@@ -225,15 +308,19 @@ export class App {
 
     private refreshRootInput() {
         const choices = this.processor.choices;
+        const current = choices[this.processor.defaultChoice];
+        if (choices.length) this.typeOptions = current ? { rootType: current.root, args: current.resolvedArgs } : {};
+        void this.refreshTypes();
         const group = this.rootSelect.parentElement!;
         group.hidden = choices.length < 2;
         this.argumentsBox.hidden = true;
         this.argumentsBox.replaceChildren();
-        this.rootSelect.replaceChildren(new Option('Choose a type', ''));
+        this.rootSelect.replaceChildren();
+        if (!current) this.rootSelect.add(new Option('Automatic', ''));
         for (const [i, choice] of choices.entries()) this.rootSelect.add(new Option(choice.label, String(i)));
-        if (choices.length === 1 && !choices[0].value) {
-            this.rootSelect.value = '0';
-            this.showChoice();
+        if (current) {
+            this.rootSelect.value = String(this.processor.defaultChoice);
+            if (!current.value) this.showChoice();
         }
     }
 
@@ -244,6 +331,8 @@ export class App {
         this.argumentsBox.hidden = true;
         this.dataField.value = '';
         this.hideFieldError('boc');
+        this.typeOptions = choice ? { rootType: choice.root, args: choice.resolvedArgs } : {};
+        void this.refreshTypes();
         if (!choice) return;
         if (choice.value) {
             this.handleResult(this.processor.selectChoice(index), 'boc');
@@ -264,10 +353,14 @@ export class App {
             input.addEventListener('input', () => {
                 this.dataField.value = '';
                 this.hideFieldError('boc');
+                this.typeOptions = { rootType: choice.root };
+                void this.refreshTypes();
                 if ([...inputs.values()].some((field) => !field.value || !field.validity.valid)) return;
                 const args = choice.args.map((item, i) =>
                     typeof item === 'number' ? item : inputs.get(i)!.valueAsNumber,
                 );
+                this.typeOptions = { rootType: choice.root, args };
+                void this.refreshTypes();
                 this.handleResult(this.processor.selectChoice(index, args), 'boc');
             });
         }
@@ -278,8 +371,9 @@ export class App {
         this.samplePicker.value = '';
         this.sampleSource.hidden = true;
         this.sampleSource.removeAttribute('href');
+        this.typeOptions = {};
         const result = this.processor.updateSchema(newSchema, this.focus);
-        this.schemaReady = result.success || this.processor.state.schema === newSchema;
+        this.schemaReady = this.processor.compiled.success;
         this.refreshRootInput();
         this.hideFieldError('boc');
         if (!result.success) {

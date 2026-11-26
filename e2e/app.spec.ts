@@ -52,10 +52,10 @@ test.describe('UI Functionality E2E Tests', () => {
         await expect(page).toHaveURL(/#share=/);
         await page.reload();
         await expect(mainPage.dataField).toHaveText(/"kind": "Tagged_tagged_on"/);
-        await expect(page.locator('#root-type')).toBeHidden();
+        await expect(page.locator('#root-type option:checked')).toHaveText('Tagged');
     });
 
-    test('asks for a type only when the BoC matches multiple types', async ({ page }) => {
+    test('opens the last declared type and offers other matching roots', async ({ page }) => {
         const root = page.locator('#root-type');
         await expect(root).toBeHidden();
         await mainPage.bocField.fill('');
@@ -66,10 +66,10 @@ test.describe('UI Functionality E2E Tests', () => {
         const boc = await mainPage.bocField.inputValue();
         await mainPage.bocField.fill('');
         await mainPage.bocField.fill(boc);
-        await expect(root.locator('option')).toHaveText(['Choose a type', 'A', 'B']);
-        await expect(mainPage.dataField.locator('.cm-placeholder')).toBeVisible();
-        await root.selectOption({ label: 'B' });
+        await expect(root.locator('option')).toHaveText(['A', 'B']);
         await expect(mainPage.dataField).toHaveText(/"kind": "B"/);
+        await root.selectOption({ label: 'A' });
+        await expect(mainPage.dataField).toHaveText(/"kind": "A"/);
         await mainPage.dataField.fill('{"kind":"A","x":43}');
         await expect(root).toBeHidden();
         await mainPage.dataField.fill('{"x":43}');
@@ -227,17 +227,17 @@ test('restores linked samples and navigates their history', async ({ page }) => 
     await expect(page.locator('#data')).toHaveText(/Maybe_just/);
 });
 
-test('shares a selected root and restores it after reload', async ({ page }) => {
+test('opens a shared BoC with the default root after an explicit local selection', async ({ page }) => {
     const schema = '_ x:uint1 = First; _ y:uint1 = Second;';
     const boc = 'te6cckEBAQEAAwAAAcCO6ba2';
     await openBoc(page, schema, boc);
-    await page.locator('#root-type').selectOption({ label: 'Second' });
+    await page.locator('#root-type').selectOption({ label: 'First' });
     await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { value: undefined }));
     await page.locator('#share').click();
     const field = page.getByRole('textbox', { name: 'Link to copy' });
     await expect(field).toBeVisible();
     const link = await field.inputValue();
-    expect(new URL(link).hash).toMatch(/^#share=(?:deflate\.)?[A-Za-z0-9_-]+&as=Second$/);
+    expect(new URL(link).hash).toMatch(/^#share=(?:deflate\.)?[A-Za-z0-9_-]+$/);
     expect(page.url()).toBe(link);
     await page.reload();
     await expect(page.locator('#schema')).toHaveText(schema);
@@ -252,13 +252,17 @@ test('reads a share envelope pasted into BoC using the documented schema', async
     await expect(page).toHaveURL(/#share=[A-Za-z0-9_-]+$/);
     const payload = new URL(page.url()).hash.slice('#share='.length);
     const picker = page.getByRole('combobox', { name: 'Sample schemas' });
-    await expect(picker.locator('optgroup[label="Usecase"] option')).toHaveText('TL-B Share');
+    await expect(picker.locator('optgroup[label="Usecase"] option')).toHaveText([
+        'TL-B Share',
+        'Inline SnakeString',
+        'Referenced SnakeString',
+    ]);
     await picker.selectOption({ label: 'TL-B Share' });
     await expect(page).toHaveURL(/#tlb-share$/);
     await expect(page.locator('#data')).toContainText('"kind": "Share"');
     await expect(page.locator('#sample-source')).toHaveAttribute(
         'href',
-        'https://github.com/ilyar/sample-tlb/blob/main/src/share-format.ts',
+        'https://github.com/ilyar/sample-tlb/blob/main/src/share/share.ts',
     );
     await page.locator('#boc').fill(payload);
     const selector = page.locator('#root-type');
@@ -395,4 +399,136 @@ test('Data links preserve the editor text and regenerate its BoC', async ({ page
         await expect(editor).toHaveText(data);
         await expect(page.locator('#boc')).toHaveValue(boc);
     }
+});
+
+test('exports the selected root independently of BoC and JSON and clears stale types', async ({ page }) => {
+    await openBoc(page, '_ x:uint1 = First; _ y:uint1 = Second;', 'te6cckEBAQEAAwAAAcCO6ba2');
+    await page.locator('#root-type').selectOption({ label: 'First' });
+    await page.getByText('Export types', { exact: true }).click();
+    const output = page.locator('#type-output');
+    await expect(page.locator('#type-format option').first()).toHaveText('JSON Schema');
+    await expect(page.locator('#type-format')).toHaveValue('json');
+    await expect(output.locator('.hljs-attr').first()).toBeVisible();
+    await expect(output).toHaveText(/"title": "First"/);
+    await page.locator('#type-format').selectOption('typescript');
+    await expect(output).toHaveText(/export type First =/);
+    await expect(output.locator('.hljs-keyword').first()).toBeVisible();
+    await page.locator('#boc').fill('broken');
+    await page.locator('#data').fill('{');
+    await page.locator('#type-format').selectOption('json');
+    await expect(output).toHaveText(/"title": "First"/);
+    await page.locator('#schema').fill('broken schema');
+    await expect(output).toHaveText('');
+    await expect(page.locator('#type-error')).not.toBeEmpty();
+    await expect(page.locator('#copy-types')).toBeDisabled();
+    await page.locator('#schema').fill('_ text:^SnakeString = Fixed;');
+    await expect(output).toHaveText(/"title": "Fixed"/);
+    await page.locator('#data').fill('{"kind":"Fixed","text":42}');
+    await expect(page.locator('#data-error')).toContainText('SnakeString requires a string');
+});
+
+test('uses the same numeric root argument for decoding and both type exports', async ({ page }) => {
+    await openBoc(page, '_ {n:#} {m:#} x:(## n) y:(## m) = Tree n m;', 'te6cckEBAQEAAwAAAeBQZwuW');
+    await page.getByRole('spinbutton', { name: 'Tree argument n' }).fill('1');
+    await page.getByRole('spinbutton', { name: 'Tree argument m' }).fill('1');
+    await expect(page.locator('#data')).toContainText('"x": 1');
+    await page.getByText('Export types', { exact: true }).click();
+    await expect(page.locator('#type-output')).toHaveText(/"maximum": 1[,\n]/);
+    await page.locator('#type-format').selectOption('typescript');
+    await expect(page.locator('#type-output')).toHaveText(/export type Tree_1_1 =/);
+});
+
+test('completes nested JSON constructors and the fields of the selected branch', async ({ page }) => {
+    await page.goto('./#tlb-share');
+    const data = page.locator('#data');
+    await expect(data).toContainText('Payload_data');
+    await data.fill('{"payload":{"kind":"');
+    await data.press('End');
+    await data.press('Control+Space');
+    const menu = page.getByRole('listbox');
+    for (const kind of ['Payload_none', 'Payload_boc', 'Payload_data'])
+        await expect(menu.getByRole('option').filter({ hasText: kind })).toBeVisible();
+    await menu.getByRole('option').filter({ hasText: 'Payload_boc' }).click();
+    await expect(data).toHaveText('{"payload":{"kind":"Payload_boc"');
+    await data.fill('{"payload":{"kind":"Payload_boc","value":{"kind":"Boc_hex",');
+    await data.press('End');
+    await page.keyboard.type('"d');
+    const field = menu.getByRole('option').filter({ hasText: '"data"' });
+    await expect(field).toContainText('^SnakeString');
+    await expect(menu.getByRole('option')).toHaveCount(1);
+    await field.click();
+    await page.keyboard.type('hello');
+    await expect(data).toHaveText('{"payload":{"kind":"Payload_boc","value":{"kind":"Boc_hex","data": "hello"');
+});
+
+test('uses the selected root for completions and drops invalidated schemas', async ({ page }) => {
+    await openBoc(page, '_ x:uint1 = First; _ y:uint1 = Second;', 'te6cckEBAQEAAwAAAcCO6ba2');
+    await page.locator('#root-type').selectOption({ label: 'First' });
+    const data = page.locator('#data');
+    const menu = page.getByRole('listbox');
+    await data.fill('{');
+    await data.press('End');
+    await data.press('Control+Space');
+    await expect(menu.getByRole('option').filter({ hasText: '"x"' })).toBeVisible();
+    await expect(menu.getByRole('option').filter({ hasText: '"y"' })).toHaveCount(0);
+    await page.locator('#schema').fill('broken schema');
+    await data.fill('{');
+    await data.press('Control+Space');
+    await expect(menu).toBeHidden();
+    await page.locator('#schema').fill('_ fresh:uint8 = Example;');
+    await data.fill('{');
+    await data.press('End');
+    await data.press('Control+Space');
+    await expect(menu.getByRole('option').filter({ hasText: '"fresh"' })).toBeVisible();
+    await expect(menu.getByRole('option').filter({ hasText: '"x"' })).toHaveCount(0);
+});
+
+test('views and copies the four additional type export languages', async ({ page }) => {
+    await page.goto('./#tlb-share');
+    await expect(page.locator('#data')).toContainText('Payload_data');
+    await page.evaluate(() =>
+        Object.defineProperty(navigator, 'clipboard', {
+            value: {
+                writeText: (text: string) => {
+                    document.body.dataset.copied = text;
+                },
+            },
+        }),
+    );
+    await page.locator('#type-panel summary').click();
+    for (const [language, declaration] of [
+        ['tolk', 'struct (0b00) PayloadNone'],
+        ['python', 'Payload = Union['],
+        ['go', 'type Payload interface'],
+        ['kotlin', 'sealed interface Payload'],
+    ]) {
+        await page.locator('#type-format').selectOption(language);
+        const output = page.locator('#type-output');
+        await expect(output).toHaveText(new RegExp(declaration.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+        await expect(output.locator('span[class^=hljs-]').first()).toBeVisible();
+        await page.locator('#copy-types').click();
+        expect(await page.locator('body').getAttribute('data-copied')).toBe(await output.textContent());
+    }
+});
+
+test('shows and copies C++ compiler instructions with an unfinished schema', async ({ page }) => {
+    await page.goto('./');
+    await page.locator('#schema').fill('unfinished');
+    await page.locator('#type-panel summary').click();
+    await page.locator('#type-format').selectOption({ label: 'C++' });
+    const expected =
+        'Use `tlbc -o schema-auto -n schema::gen -z schema.tlb` from https://github.com/ton-blockchain/ton/releases\n' +
+        'for example https://github.com/ton-blockchain/ton/releases/download/v2026.11/ton-<OS>-<ARCH>.zip';
+    await expect(page.locator('#type-output')).toHaveText(expected);
+    await page.evaluate(() =>
+        Object.defineProperty(navigator, 'clipboard', {
+            value: {
+                writeText: (text: string) => {
+                    document.body.dataset.copied = text;
+                },
+            },
+        }),
+    );
+    await page.locator('#copy-types').click();
+    await expect(page.locator('body')).toHaveAttribute('data-copied', expected);
 });

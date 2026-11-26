@@ -1,0 +1,8 @@
+text$01 data:^SnakeString = Schema;
+json$01 data:^SnakeString = Data;
+cell$01 data:^Cell = Boc;
+hex$10 data:^SnakeString = Boc;
+none$00 = Payload;
+boc$01 value:Boc = Payload;
+data$10 value:Data = Payload;
+share_v1#01 schema:Schema payload:Payload = Share;

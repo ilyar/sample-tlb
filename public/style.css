@@ -211,6 +211,16 @@ select:hover {
     border-color: var(--line);
     background: var(--wash);
 }
+.cm-editor .cm-tooltip-autocomplete {
+    color: var(--text);
+    background: var(--panel);
+    border-color: var(--line);
+}
+.cm-editor .cm-tooltip-autocomplete ul li[aria-selected] {
+    color: var(--text);
+    background: var(--wash);
+    box-shadow: inset 2px 0 var(--focus);
+}
 .cm-editor .cm-matchingBracket {
     background: var(--wash);
     outline: 1px solid var(--muted);
@@ -357,3 +367,34 @@ select:hover {
 [hidden] {
     display: none !important;
 }
+
+#type-panel summary {
+  cursor: pointer;
+}
+
+#type-panel .label-row {
+  margin: .5rem 0;
+}
+
+#type-output {
+  box-sizing: border-box;
+  width: 100%;
+  height: 16rem;
+  overflow: auto;
+  margin: 0;
+  padding: .5rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+}
+
+#type-output .hljs-keyword,
+#type-output .hljs-type,
+#type-output .hljs-title,
+#type-output .hljs-built_in { color: var(--type); }
+#type-output .hljs-attr,
+#type-output .hljs-property { color: var(--key); }
+#type-output .hljs-string { color: var(--string); }
+#type-output .hljs-number,
+#type-output .hljs-literal { color: var(--number); }
+#type-output .hljs-comment { color: var(--muted); }

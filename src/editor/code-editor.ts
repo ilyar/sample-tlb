@@ -1,3 +1,4 @@
+import { autocompletion, type CompletionSource } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { json } from '@codemirror/lang-json';
 import {
@@ -92,18 +93,19 @@ const external = Annotation.define<boolean>();
 export class CodeEditor {
     private readonly view: EditorView;
 
-    constructor(id: 'data' | 'schema', change: (value: string) => void) {
+    constructor(id: 'data' | 'schema', change: (value: string) => void, complete?: CompletionSource) {
         const host = document.querySelector<HTMLElement>(`#${id}-editor`)!;
         this.view = new EditorView({
             parent: host,
             extensions: [
                 id === 'schema' ? tlb : [json(), foldGutter(), jsonValues],
+                complete ? autocompletion({ override: [complete] }) : [],
                 syntaxHighlighting(colors),
                 history(),
                 bracketMatching(),
                 EditorView.lineWrapping,
                 keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
-                placeholder(id === 'data' ? 'Data in JSON' : 'TL-B schema'),
+                placeholder(id === 'data' ? 'Data in JSON · Ctrl+Space for suggestions' : 'TL-B schema'),
                 EditorState.tabSize.of(2),
                 EditorView.contentAttributes.of({
                     id,

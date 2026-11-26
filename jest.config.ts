@@ -6,6 +6,7 @@ const config: Config = {
     roots: ['<rootDir>/src'],
     testMatch: ['**/*.test.ts'],
     transform: {
+        '^.+\\.tlb$': '<rootDir>/scripts/jest-raw.cjs',
         '^.+\\.ts$': [
             'ts-jest',
             {
@@ -19,6 +20,7 @@ const config: Config = {
     coverageReporters: ['text', 'lcov', 'html'],
     extensionsToTreatAsEsm: ['.ts'],
     moduleNameMapper: {
+        '^(.+\\.tlb)\\?raw$': '$1',
         '^(\\.{1,2}/.*)\\.js$': '$1',
     },
 };
