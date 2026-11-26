@@ -1,8 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { beginCell } from '@ton/core';
-import { runtimeBy, TLBRuntime, unwrap } from '@ton-community/tlb-runtime';
+import { runtimeBy } from '@ton-community/tlb-runtime';
 
 import { CellProcessor } from './cell-processor';
 import samples from './samples.json';
@@ -73,8 +75,17 @@ test('exports the Share graph and discriminated branches', () => {
 test('keeps the reference Share declarations and playground preset in sync', () => {
     const schema = samples.find((sample) => sample.id === 'tlb-share')!.schema;
     expect(shareSchema.trimEnd()).toBe(schema);
-    const runtime = unwrap(TLBRuntime.from(shareSchema, { autoText: false }));
-    expect(readFileSync(join(__dirname, 'share/share.d.ts'), 'utf8')).toBe(runtime.toTypeScript({ rootType: 'Share' }));
+    const dir = mkdtempSync(join(tmpdir(), 'share-types-'));
+    try {
+        const input = join(dir, 'share.tlb');
+        writeFileSync(input, shareSchema);
+        execFileSync(process.execPath, [join(__dirname, '../scripts/type-by-schema.mjs'), input]);
+        expect(readFileSync(join(dir, 'share.d.ts'), 'utf8')).toBe(
+            readFileSync(join(__dirname, 'share/share.d.ts'), 'utf8'),
+        );
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
 });
 
 test('exports the Share discriminators, reference fields and tag widths in each language', () => {

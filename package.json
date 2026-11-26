@@ -36,7 +36,7 @@
     "@lezer/lr": "^1.4.12",
     "@playwright/test": "^1.54.2",
     "@resvg/resvg-js": "^2.6.2",
-    "@ton-community/tlb-runtime": "https://github.com/ilyar/tlb-runtime/releases/download/pr-7-42927ad/tlb-runtime-42927ad.tgz",
+    "@ton-community/tlb-runtime": "https://github.com/ilyar/tlb-runtime/releases/download/pr-7-7569106/tlb-runtime-7569106.tgz",
     "@ton/core": "^0.63.0",
     "@ton/toolchain": "the-ton-tech/toolchain#v1",
     "@types/jest": "^30.0.0",
