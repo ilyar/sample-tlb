@@ -25,3 +25,9 @@ yarn dev
 Run `yarn lint`, `yarn test` and `yarn test:e2e` to check changes, then `yarn build` for a production build
 
 To add a preset, provide `title`, `schema` and `boc` in the [sample catalog](src/samples.json)
+
+## Codeberg mirror
+
+GitHub Actions syncs `main` to [Codeberg](https://codeberg.org/ilyar/sample-tlb) and publishes the verified GitHub Pages artifact to the `pages` branch for [Codeberg Pages](https://ilyar.codeberg.page/sample-tlb/)
+
+Set the `CODEBERG_AUDIENCE` variable in the GitHub Actions environment `codeberg` to the audience of the Codeberg JWT integration with repository write access to `ilyar/sample-tlb`

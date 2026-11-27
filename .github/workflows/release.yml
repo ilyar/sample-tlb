@@ -39,3 +39,64 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
+
+  codeberg-main:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: codeberg
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - &codeberg-auth
+        name: Authorize Git on Codeberg
+        uses: actions/github-script@v8
+        env:
+          AUDIENCE: ${{ vars.CODEBERG_AUDIENCE }}
+        with:
+          script: |
+            if (!process.env.AUDIENCE) throw new Error('Missing CODEBERG_AUDIENCE')
+            const jwt = await core.getIDToken(process.env.AUDIENCE)
+            core.setSecret(jwt)
+            core.exportVariable('GIT_CONFIG_COUNT', '1')
+            core.exportVariable('GIT_CONFIG_KEY_0', 'http.https://codeberg.org/ilyar/sample-tlb.git.extraHeader')
+            core.exportVariable('GIT_CONFIG_VALUE_0', 'Authorization: Bearer ' + jwt)
+      - name: Sync main to Codeberg
+        run: |
+          git push https://codeberg.org/ilyar/sample-tlb.git HEAD:refs/heads/main
+
+  codeberg-pages:
+    needs: [qa, e2e, build, codeberg-main]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: codeberg
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: artifact
+      - *codeberg-auth
+      - name: Publish verified build to Codeberg Pages
+        run: |
+          git init -b pages site
+          cd site
+          git remote add codeberg https://codeberg.org/ilyar/sample-tlb.git
+          if [[ -n "$(git ls-remote --heads codeberg refs/heads/pages)" ]]; then
+            git fetch --depth=1 codeberg refs/heads/pages
+            git reset --mixed FETCH_HEAD
+          fi
+          tar -xf ../artifact/artifact.tar
+          test -s index.html
+          git add --all --force
+          if ! git diff --cached --quiet; then
+            git -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com \
+              commit -m "Deploy ${GITHUB_SHA}"
+            git push codeberg HEAD:refs/heads/pages
+          fi
