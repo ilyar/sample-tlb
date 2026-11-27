@@ -9,6 +9,11 @@ for (const [name, grammar] of Object.entries({ go, json, kotlin, python, typescr
     hljs.registerLanguage(name, grammar);
 }
 
+hljs.registerLanguage('func', (hl) => ({
+    keywords: 'const int',
+    contains: [hl.COMMENT(';;', '$'), hl.C_NUMBER_MODE],
+}));
+
 hljs.registerLanguage('tolk', (hl) => ({
     keywords: 'struct type',
     contains: [

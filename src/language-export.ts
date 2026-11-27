@@ -8,9 +8,10 @@ import {
 } from '@ton-community/tlb-runtime/dist/type-graph';
 import type { TLBRuntime, TypeExportOptions } from '@ton-community/tlb-runtime';
 
-export type Language = 'tolk' | 'python' | 'go' | 'kotlin';
+export type Language = 'func' | 'tolk' | 'python' | 'go' | 'kotlin';
 
 const reservedTypes: Record<Language, string> = {
+    func: '',
     tolk: 'Cell RemainingBitsAndRefs',
     python: 'Literal NotRequired TypedDict Union None True False',
     go: '',
@@ -81,6 +82,26 @@ export function exportModel<T>(runtime: TLBRuntime<T>, language: Language, optio
     const used = new Set(reservedTypes[language].split(' '));
     const imports = new Set<string>();
     const warnings = new Set<string>();
+
+    if (language === 'func') {
+        blocks.push(';; See https://docs.ton.org/tolk/from-func/tolk-vs-func');
+        for (const type of graph.types.values()) {
+            const constructors = runtime.getTypes().get(type.tlbName.split(' ')[0])?.constructors;
+            for (const variant of type.variants) {
+                const ctor = constructors?.find((c) => c.declaration === variant.declaration);
+                const lines = [';; ' + variant.declaration];
+                if (ctor?.tag.bitLen) {
+                    const stem = words(type.name + '_' + variant.constructorName)
+                        .join('_')
+                        .toLowerCase();
+                    const name = allocate(used, 'tag_' + stem);
+                    lines.push(`const int ${name} = ${BigInt(ctor.tag.binary)};  ;; ${ctor.tag.bitLen} bits`);
+                }
+                blocks.push(lines.join('\n'));
+            }
+        }
+        return blocks.join('\n\n') + '\n';
+    }
 
     function typeName(name: string) {
         return allocate(used, identifier(words(name), language));
@@ -282,5 +303,6 @@ export function exportModel<T>(runtime: TLBRuntime<T>, language: Language, optio
         blocks.unshift('package models' + (imports.size ? '\n\nimport ' + [...imports].join('\n') : ''));
     if (language === 'python') blocks.unshift('from typing import Literal, NotRequired, TypedDict, Union');
     if (language === 'tolk' && warnings.size) blocks.unshift([...warnings].map((w) => '// ' + w).join('\n'));
+    if (language === 'tolk') blocks.unshift('// See https://docs.ton.org/tolk/from-func/tolk-vs-tlb');
     return blocks.join('\n\n') + '\n';
 }
