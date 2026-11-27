@@ -1240,9 +1240,9 @@
   dependencies:
     ohm-js "^16.6.0"
 
-"@ton-community/tlb-runtime@https://github.com/ilyar/tlb-runtime/releases/download/pr-7-7569106/tlb-runtime-7569106.tgz":
+"@ton-community/tlb-runtime@https://github.com/ilyar/tlb-runtime/releases/download/runtime-series-f1e303c/ton-community-tlb-runtime-1.0.0-alpha.5.tgz":
   version "1.0.0-alpha.5"
-  resolved "https://github.com/ilyar/tlb-runtime/releases/download/pr-7-7569106/tlb-runtime-7569106.tgz#230f33ccf8576c40419aa193bb336e7b45e3e9da"
+  resolved "https://github.com/ilyar/tlb-runtime/releases/download/runtime-series-f1e303c/ton-community-tlb-runtime-1.0.0-alpha.5.tgz#f9fa0ff8b74569773f081623f1d0d9fc8a03dc2f"
   dependencies:
     "@ton-community/tlb-codegen" "2.0.0-beta.3"
     "@ton-community/tlb-parser" "^0.1.5"
