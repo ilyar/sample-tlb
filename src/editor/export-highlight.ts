@@ -3,9 +3,10 @@ import go from 'highlight.js/lib/languages/go';
 import json from 'highlight.js/lib/languages/json';
 import kotlin from 'highlight.js/lib/languages/kotlin';
 import python from 'highlight.js/lib/languages/python';
+import swift from 'highlight.js/lib/languages/swift';
 import typescript from 'highlight.js/lib/languages/typescript';
 
-for (const [name, grammar] of Object.entries({ go, json, kotlin, python, typescript })) {
+for (const [name, grammar] of Object.entries({ go, json, kotlin, python, swift, typescript })) {
     hljs.registerLanguage(name, grammar);
 }
 

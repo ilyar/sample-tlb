@@ -8,9 +8,10 @@ import {
 } from '@ton-community/tlb-runtime/dist/type-graph';
 import type { TLBRuntime, TypeExportOptions } from '@ton-community/tlb-runtime';
 
-export type Language = 'func' | 'tolk' | 'python' | 'go' | 'kotlin';
+export type Language = 'swift' | 'func' | 'tolk' | 'python' | 'go' | 'kotlin';
 
 const reservedTypes: Record<Language, string> = {
+    swift: 'Any Self Bool Int64 UInt64 UInt8 String',
     func: '',
     tolk: 'Cell RemainingBitsAndRefs',
     python: 'Literal NotRequired TypedDict Union None True False',
@@ -111,6 +112,26 @@ export function exportModel<T>(runtime: TLBRuntime<T>, language: Language, optio
     function modelField(t: ResolvedFieldType, owner: string): string {
         const py = language === 'python',
             go = language === 'go';
+        if (language === 'swift') {
+            switch (t.kind) {
+                case 'boolean':
+                    return 'Bool';
+                case 'number':
+                    return (t.min ?? -1) >= 0 ? 'UInt64' : 'Int64';
+                case 'bigint':
+                    return t.bitWidth && t.bitWidth <= 64 ? (t.signed ? 'Int64' : 'UInt64') : 'String';
+                case 'cell':
+                    return '[UInt8]';
+                case 'array':
+                    return `[${modelField(t.item, owner)}]`;
+                case 'tuple':
+                    return '[Any]';
+                case 'dictionary':
+                    return `[String: ${modelField(t.value, owner)}]`;
+                case 'bits':
+                    return t.bitLength === 1 ? 'Bool' : t.bitLength === undefined ? 'Any' : 'String';
+            }
+        }
         switch (t.kind) {
             case 'ref':
                 return (go && graph.types.get(t.target)?.variants.length === 1 ? '*' : '') + names.get(t.target)!;
@@ -150,6 +171,11 @@ export function exportModel<T>(runtime: TLBRuntime<T>, language: Language, optio
             case 'unknown':
                 return py ? 'object' : go ? 'any' : 'Any?';
         }
+    }
+
+    function swiftField(field: ResolvedField, owner: string): string {
+        const type = modelField(field.type, owner + capitalized(field.name));
+        return field.optional ? nullable('swift', type) : type;
     }
 
     // Inline recursive values cannot inhabit a finite Tolk struct. Preserve the slice
@@ -218,6 +244,7 @@ export function exportModel<T>(runtime: TLBRuntime<T>, language: Language, optio
                 usedFields,
                 language === 'tolk' && tolkKeywords.has(base) ? base + 'Field' : base,
             );
+            if (language === 'swift') return `    let \`${fieldName}\`: ${swiftField(f, owner)}`;
             if (language === 'tolk') return `    ${fieldName}: ${tolkField(f, owner)}  // ${f.tlbType}`;
             let type = modelField(f.type, name + capitalized(f.name));
             if (language === 'python')
@@ -229,7 +256,8 @@ export function exportModel<T>(runtime: TLBRuntime<T>, language: Language, optio
             const source = fieldName === f.name ? '' : `    // TL-B field: ${f.name}\n`;
             return source + `    val ${property}: ${type}${f.optional ? ' = null' : ''}`;
         });
-        if (language === 'tolk') blocks.push(`struct ${prefix}${name} {\n${lines.join('\n')}\n}`);
+        if (language === 'swift') blocks.push(`struct ${name} {\n${lines.join('\n')}\n}`);
+        else if (language === 'tolk') blocks.push(`struct ${prefix}${name} {\n${lines.join('\n')}\n}`);
         else if (language === 'python') {
             if (variant) lines.unshift(`    "kind": Literal[${JSON.stringify(variant.kind)}],`);
             blocks.push(`${name} = TypedDict("${name}", {\n${lines.join('\n')}\n})`);
@@ -265,6 +293,20 @@ export function exportModel<T>(runtime: TLBRuntime<T>, language: Language, optio
                       ? `${name} = ${value}`
                       : `typealias ${name} = ${value}`,
             );
+            return;
+        }
+        if (language === 'swift') {
+            const usedCases = new Set<string>();
+            const cases = t.variants.map((variant) => {
+                const label = allocate(usedCases, identifier(words(variant.constructorName), language, true));
+                const usedLabels = new Set<string>();
+                const fields = variant.fields.map((field) => {
+                    const key = allocate(usedLabels, identifier(words(field.name), language, true));
+                    return '`' + key + '`' + ': ' + swiftField(field, name);
+                });
+                return '    case `' + label + '`' + (fields.length ? '(' + fields.join(', ') + ')' : '');
+            });
+            blocks.push(`indirect enum ${name} {\n${cases.join('\n')}\n}`);
             return;
         }
         const union = t.variants.length > 1;
